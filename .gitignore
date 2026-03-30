@@ -1,0 +1,112 @@
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+var/
+sdist/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.manifest
+*.spec
+MANIFEST
+
+# ── Virtual environments ──────────────────────────────────────────────────────
+venv/
+.venv/
+env/
+.env/
+ENV/
+env.bak/
+venv.bak/
+
+# ── Environment variables ─────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+*.env
+
+# ── Streamlit ─────────────────────────────────────────────────────────────────
+.streamlit/secrets.toml
+.streamlit/
+
+# ── LangChain / LangSmith ────────────────────────────────────────────────────
+.langchain/
+langchain.db
+
+# ── ChromaDB (local vector store) ────────────────────────────────────────────
+chroma/
+chroma_db/
+data/chroma/
+*.chroma
+
+# ── Ollama model cache ────────────────────────────────────────────────────────
+.ollama/
+ollama_cache/
+
+# ── Uploaded / generated files ────────────────────────────────────────────────
+data/drug_monographs/
+uploads/
+tmp/
+temp/
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.tiff
+*.bmp
+reports/
+output/
+outputs/
+
+# ── Test artifacts ────────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+*.cover
+.hypothesis/
+nosetests.xml
+test-results/
+
+# ── IDE / editor ──────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+*.log
+logs/
+log/
+
+# ── Jupyter ───────────────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb
+
+# ── Type checking ─────────────────────────────────────────────────────────────
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pytype/
+
+# ── Distribution / packaging ──────────────────────────────────────────────────
+*.tar.gz
+*.zip
+*.whl
