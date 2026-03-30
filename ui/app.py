@@ -1,5 +1,7 @@
 import os
+import re
 import sys
+import html
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import streamlit as st
 import json
@@ -399,6 +401,29 @@ def status_badge(urg: str) -> str:
     return f'<span class="status-badge status-{cls}">{icons.get(cls,"●")} {urg}</span>'
 
 
+def sanitize_model_text(value) -> str:
+    if value is None:
+        return ""
+
+    text = str(value)
+    # Remove markdown code fences and any embedded HTML so model artifacts show as plain prose.
+    text = re.sub(r"```[a-zA-Z0-9_-]*", "", text)
+    text = text.replace("```", "")
+    text = re.sub(r"<[^>]+>", " ", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return html.escape(text)
+
+
+def normalize_alternatives_items(items):
+    if isinstance(items, list):
+        return [item for item in items if isinstance(item, dict)]
+    if isinstance(items, dict):
+        return [items]
+    if isinstance(items, str) and items.strip():
+        return [{"name": "", "class": "", "rationale": items, "notes": ""}]
+    return []
+
+
 def run_check(raw_input: str, input_type: str, patient_info: dict) -> dict:
     initial_state = {
         "raw_input": raw_input, "input_type": input_type,
@@ -500,7 +525,7 @@ def render_report(report: dict):
         )
 
     # ── Interactions ──────────────────────────────────────────────────────────
-    st.markdown(f'<p class="sec-label">Drug Interactions</p>', unsafe_allow_html=True)
+    st.markdown('<p class="sec-label">Drug Interactions</p>', unsafe_allow_html=True)
     if ixs:
         has_high = any(i.get("severity","").upper() in ("HIGH","CRITICAL","CONTRAINDICATED") for i in ixs)
         card_cls = "danger" if has_high else "warning"
@@ -552,27 +577,31 @@ def render_report(report: dict):
     if alts:
         st.markdown('<p class="sec-label">Suggested Alternatives</p>', unsafe_allow_html=True)
         for alt in alts:
-            alts_html = ""
-            for a in alt.get("alternatives", []):
-                alts_html += f"""
-                <div class="alt-block">
-                  <div>
-                    <span class="alt-name">→ {a.get('name','').title()}</span>
-                    <span class="alt-class">{a.get('class','')}</span>
-                  </div>
-                  <div class="alt-rat">{a.get('rationale','')}</div>
-                  <div class="alt-note">{a.get('notes','')}</div>
-                </div>"""
-            st.markdown(f"""
-            <div class="rx-card info">
-              <div style="font-weight:600;font-size:14px;color:#1a3c6e;margin-bottom:4px">
-                {alt.get('original_drug','').title()}
-              </div>
-              <div style="font-size:13px;color:#4a4a45;margin-bottom:2px">
-                {alt.get('reason_for_change','')}
-              </div>
-              {alts_html}
-            </div>""", unsafe_allow_html=True)
+            if not isinstance(alt, dict):
+                continue
+            original_drug = sanitize_model_text(alt.get("original_drug", "")).title()
+            reason_for_change = sanitize_model_text(alt.get("reason_for_change", ""))
+
+            with st.container(border=True):
+                if original_drug:
+                    st.markdown(f"**{original_drug}**")
+                if reason_for_change:
+                    st.write(reason_for_change)
+
+                for a in normalize_alternatives_items(alt.get("alternatives", [])):
+                    alt_name = sanitize_model_text(a.get("name", "")).title()
+                    alt_class = sanitize_model_text(a.get("class", ""))
+                    alt_rationale = sanitize_model_text(a.get("rationale", ""))
+                    alt_notes = sanitize_model_text(a.get("notes", ""))
+
+                    line = alt_name or "Alternative"
+                    if alt_class:
+                        line = f"{line} ({alt_class})"
+                    st.markdown(f"- **{line}**")
+                    if alt_rationale:
+                        st.write(alt_rationale)
+                    if alt_notes:
+                        st.caption(alt_notes)
 
     # ── Literature findings ───────────────────────────────────────────────────
     if web:
@@ -605,8 +634,11 @@ if "graph" not in st.session_state:
         from graph.builder import build_graph
         st.session_state.graph = build_graph()
 
-if "report"      not in st.session_state: st.session_state.report      = None
-if "sample_text" not in st.session_state: st.session_state.sample_text = ""
+if "report" not in st.session_state:
+  st.session_state.report = None
+
+if "sample_text" not in st.session_state:
+  st.session_state.sample_text = ""
 
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
@@ -718,8 +750,10 @@ with tab_pdf:
                     st.session_state.report = run_check(path, "pdf", patient_info)
                     os.unlink(path)
                 except Exception as e:
-                    try: os.unlink(path)
-                    except: pass
+                  try:
+                    os.unlink(path)
+                  except Exception:
+                    pass
                     st.error(f"Error: {e}")
 
 with tab_img:
@@ -748,8 +782,10 @@ with tab_img:
                     st.session_state.report = run_check(path, "image", patient_info)
                     os.unlink(path)
                 except Exception as e:
-                    try: os.unlink(path)
-                    except: pass
+                  try:
+                    os.unlink(path)
+                  except Exception:
+                    pass
                     st.error(f"Error: {e}")
 
 # ── Report output ──────────────────────────────────────────────────────────────

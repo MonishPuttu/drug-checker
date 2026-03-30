@@ -31,6 +31,83 @@ Return ONLY valid JSON:
 If no contraindications are found, return: {"contraindications": []}"""
 
 
+RULE_BASED_CONTRAINDICATIONS = {
+    "warfarin": [
+        {
+            "condition": "pregnancy",
+            "severity": "HIGH",
+            "description": "Warfarin can cause fetal harm and major congenital malformations.",
+            "recommendation": "Avoid during pregnancy unless absolutely necessary and specialist-supervised.",
+            "source": "RuleBasedKnowledge",
+        },
+        {
+            "condition": "active bleeding",
+            "severity": "HIGH",
+            "description": "Warfarin is contraindicated in active major bleeding.",
+            "recommendation": "Use non-anticoagulant options until bleeding is controlled.",
+            "source": "RuleBasedKnowledge",
+        },
+    ],
+    "aspirin": [
+        {
+            "condition": "active peptic ulcer or bleeding disorder",
+            "severity": "HIGH",
+            "description": "Aspirin can worsen bleeding and may precipitate GI hemorrhage.",
+            "recommendation": "Avoid aspirin and consider safer alternatives when bleeding risk is high.",
+            "source": "RuleBasedKnowledge",
+        },
+        {
+            "condition": "aspirin-exacerbated respiratory disease / NSAID hypersensitivity",
+            "severity": "HIGH",
+            "description": "Aspirin may trigger bronchospasm or severe hypersensitivity reactions.",
+            "recommendation": "Avoid aspirin in known NSAID-sensitive asthma or prior hypersensitivity.",
+            "source": "RuleBasedKnowledge",
+        },
+    ],
+}
+
+
+def _rule_based_contraindications(drug_names):
+    items = []
+    for drug in sorted({(d or "").lower().strip() for d in drug_names if d}):
+        for entry in RULE_BASED_CONTRAINDICATIONS.get(drug, []):
+            items.append({"drug": drug, **entry})
+    return items
+
+
+def _openfda_contraindications(drug_names):
+    items = []
+    for drug in drug_names:
+        for finding in get_openfda_interactions(drug):
+            if finding.get("type") != "contraindication":
+                continue
+            items.append({
+                "drug": drug,
+                "condition": "FDA label contraindication",
+                "severity": "HIGH",
+                "description": finding.get("text", ""),
+                "recommendation": "Avoid use if contraindication applies; review full label and patient history.",
+                "source": finding.get("source", "OpenFDA"),
+            })
+    return items
+
+
+def _dedupe_contraindications(items):
+    seen = set()
+    deduped = []
+    for item in items:
+        drug = (item.get("drug") or "").lower().strip()
+        condition = (item.get("condition") or "").lower().strip()
+        if not drug or not condition:
+            continue
+        key = (drug, condition)
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(item)
+    return deduped
+
+
 def contraindication_node(state: AgentState) -> AgentState:
     drugs = state.get("drugs", [])
     patient_info = state.get("patient_info", {})
@@ -39,6 +116,8 @@ def contraindication_node(state: AgentState) -> AgentState:
         return {**state, "contraindications": []}
 
     drug_names = [d["name"] for d in drugs if d.get("name")]
+    rule_based = _rule_based_contraindications(drug_names)
+    fda_based = _openfda_contraindications(drug_names)
 
     patient_str = ""
     if patient_info:
@@ -75,7 +154,8 @@ def contraindication_node(state: AgentState) -> AgentState:
         else:
             contraindications = []
 
-    except Exception as e:
+    except Exception:
         contraindications = []
 
-    return {**state, "contraindications": contraindications}
+    merged = _dedupe_contraindications(contraindications + fda_based + rule_based)
+    return {**state, "contraindications": merged}

@@ -28,6 +28,68 @@ Return ONLY valid JSON:
 }"""
 
 
+RULE_BASED_INTERACTIONS = {
+    frozenset(["warfarin", "aspirin"]): {
+        "severity": "HIGH",
+        "description": "Concomitant use increases bleeding risk because both agents affect hemostasis.",
+        "recommendation": "Avoid combination when possible or monitor INR and bleeding closely.",
+        "source": "RuleBasedKnowledge"
+    },
+    frozenset(["warfarin", "ibuprofen"]): {
+        "severity": "HIGH",
+        "description": "Combined anticoagulant and NSAID effect increases risk of major bleeding.",
+        "recommendation": "Prefer non-NSAID analgesics and monitor for bleeding signs.",
+        "source": "RuleBasedKnowledge"
+    },
+    frozenset(["sertraline", "tramadol"]): {
+        "severity": "HIGH",
+        "description": "Combination may increase serotonin syndrome and seizure risk.",
+        "recommendation": "Use alternative analgesic or monitor closely for serotonin toxicity.",
+        "source": "RuleBasedKnowledge"
+    },
+    frozenset(["fluoxetine", "tramadol"]): {
+        "severity": "HIGH",
+        "description": "Combination may increase serotonin syndrome and seizure risk.",
+        "recommendation": "Use alternative analgesic or monitor closely for serotonin toxicity.",
+        "source": "RuleBasedKnowledge"
+    },
+}
+
+
+def _rule_based_interactions(drug_names):
+    normalized = sorted({(d or "").lower().strip() for d in drug_names if d})
+    findings = []
+    for i, drug1 in enumerate(normalized):
+        for drug2 in normalized[i + 1:]:
+            key = frozenset([drug1, drug2])
+            payload = RULE_BASED_INTERACTIONS.get(key)
+            if not payload:
+                continue
+            findings.append({
+                "drug1": drug1,
+                "drug2": drug2,
+                "severity": payload["severity"],
+                "description": payload["description"],
+                "recommendation": payload["recommendation"],
+                "source": payload["source"],
+            })
+    return findings
+
+
+def _dedupe_interactions(interactions):
+    seen = set()
+    deduped = []
+    for item in interactions:
+        d1 = (item.get("drug1") or "").lower().strip()
+        d2 = (item.get("drug2") or "").lower().strip()
+        key = tuple(sorted([d1, d2]))
+        if not d1 or not d2 or key in seen:
+            continue
+        seen.add(key)
+        deduped.append(item)
+    return deduped
+
+
 def interaction_node(state: AgentState) -> AgentState:
     drugs = state.get("drugs", [])
     if len(drugs) < 1:
@@ -41,9 +103,12 @@ def interaction_node(state: AgentState) -> AgentState:
     for name in drug_names:
         fda_warnings.extend(get_openfda_interactions(name))
 
+    rule_based = _rule_based_interactions(drug_names)
+
     all_findings = {
         "api_interactions": api_interactions,
         "fda_warnings": fda_warnings[:5],
+        "rule_based": rule_based,
         "drugs_checked": drug_names
     }
 
@@ -61,10 +126,12 @@ def interaction_node(state: AgentState) -> AgentState:
             json_match = re.search(r'\{.*\}', content, re.DOTALL)
             if json_match:
                 parsed = json.loads(json_match.group())
-                return {**state, "interactions": parsed.get("interactions", [])}
+                parsed_interactions = parsed.get("interactions", [])
+                merged = _dedupe_interactions(parsed_interactions + rule_based)
+                return {**state, "interactions": merged}
         except Exception:
             pass
-        return {**state, "interactions": []}
+        return {**state, "interactions": rule_based}
 
     try:
         llm = ChatOllama(model="llama3.2", temperature=0)
@@ -85,4 +152,5 @@ def interaction_node(state: AgentState) -> AgentState:
     except Exception:
         interactions = api_interactions
 
-    return {**state, "interactions": interactions}
+    merged = _dedupe_interactions(interactions + rule_based)
+    return {**state, "interactions": merged}
