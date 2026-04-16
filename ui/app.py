@@ -1,799 +1,429 @@
 import os
-import re
 import sys
-import html
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import streamlit as st
 import json
 import tempfile
 
-# ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="RxCheck · Drug Interaction Checker",
+    page_title="RxCheck",
     page_icon="⚕",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
-# ── CSS ───────────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,300&family=DM+Sans:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&display=swap');
 
 :root {
-  --bg:        #fafaf8;
-  --surface:   #ffffff;
-  --surface2:  #f5f4f0;
-  --ink:        #1a1a18;
-  --ink2:       #4a4a45;
-  --ink3:       #8a8a82;
-  --border:     #e4e2da;
-  --border2:    #d0cec5;
-  --accent:     #1a5c3a;
-  --accent2:    #2d7a52;
-  --accent-bg:  #eef6f1;
-  --red:        #9b2335;
-  --red-bg:     #fdf1f3;
-  --amber:      #8a5200;
-  --amber-bg:   #fdf6e7;
-  --blue:       #1a3c6e;
-  --blue-bg:    #eff4fc;
-  --radius:     12px;
-  --radius-sm:  8px;
-  --shadow:     0 1px 3px rgba(26,26,24,0.06), 0 4px 16px rgba(26,26,24,0.04);
-  --shadow-md:  0 2px 8px rgba(26,26,24,0.08), 0 12px 32px rgba(26,26,24,0.06);
+  --cream:#f7f5f0;--white:#ffffff;--ink:#18181a;--ink2:#52525b;--ink3:#a1a1aa;
+  --border:#e4e4e7;--border2:#d4d4d8;
+  --green:#166534;--green-m:#16a34a;--green-l:#dcfce7;--green-b:#f0fdf4;
+  --red:#991b1b;--red-m:#dc2626;--red-l:#fee2e2;--red-b:#fff1f2;
+  --amber:#92400e;--amber-m:#d97706;--amber-l:#fde68a;--amber-b:#fffbeb;
+  --blue:#1e3a8a;--blue-m:#2563eb;--blue-l:#dbeafe;--blue-b:#eff6ff;
+  --shadow-s:0 1px 2px rgba(0,0,0,0.05);
+  --shadow-m:0 4px 6px -1px rgba(0,0,0,0.07),0 2px 4px -1px rgba(0,0,0,0.04);
+  --shadow-l:0 10px 15px -3px rgba(0,0,0,0.08),0 4px 6px -2px rgba(0,0,0,0.03);
+  --r:12px;--r-sm:8px;--r-xs:6px;
 }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body,[class*="css"]{font-family:'Geist',sans-serif;}
+.stApp{background:var(--cream);}
+#MainMenu,footer,header{visibility:hidden;}
+.block-container{padding:0!important;max-width:100%!important;}
+section[data-testid="stSidebar"]{display:none!important;}
+[data-testid="collapsedControl"]{display:none!important;}
 
-html, body, [class*="css"] {
-  font-family: 'DM Sans', sans-serif;
-  color: var(--ink);
-}
+.stTabs [data-baseweb="tab-list"]{gap:2px;background:#f4f4f5;border:1px solid var(--border);border-radius:var(--r-sm);padding:3px;width:fit-content;}
+.stTabs [data-baseweb="tab"]{border-radius:var(--r-xs);padding:7px 18px;font-size:13px;font-weight:500;color:var(--ink2);background:transparent;border:none;font-family:'Geist',sans-serif;}
+.stTabs [aria-selected="true"]{background:var(--white)!important;color:var(--ink)!important;font-weight:600!important;box-shadow:var(--shadow-s)!important;}
 
-.stApp { background: var(--bg); }
+.stTextArea textarea{border-radius:var(--r-sm);border:1.5px solid var(--border);background:var(--white);color:var(--ink);font-size:15px;line-height:1.7;font-family:'Geist',sans-serif;padding:14px 16px;transition:border-color 0.15s,box-shadow 0.15s;box-shadow:var(--shadow-s);}
+.stTextArea textarea:focus{border-color:var(--green-m)!important;box-shadow:0 0 0 3px rgba(22,163,74,0.12)!important;}
+.stTextArea textarea::placeholder{color:var(--ink3);}
+.stTextArea label{display:none!important;}
+.stFileUploader label{display:none!important;}
+.stFileUploader section{background:var(--white);border:1.5px dashed var(--border2);border-radius:var(--r);box-shadow:var(--shadow-s);}
+.stFileUploader section:hover{border-color:var(--green-m);}
 
-/* ── Hide chrome ── */
-#MainMenu, footer, header { visibility: hidden; }
-.block-container { padding: 2rem 2rem 4rem; max-width: 1060px; }
+.stButton>button[kind="primary"]{background:var(--ink)!important;color:#fff!important;border:none!important;border-radius:var(--r-sm)!important;font-weight:600!important;font-size:15px!important;letter-spacing:-0.01em!important;padding:13px 0!important;font-family:'Geist',sans-serif!important;box-shadow:var(--shadow-m)!important;transition:all 0.15s!important;}
+.stButton>button[kind="primary"]:hover{background:#27272a!important;box-shadow:var(--shadow-l)!important;transform:translateY(-1px)!important;}
+.stButton>button:not([kind="primary"]){background:var(--white)!important;color:var(--ink2)!important;border:1px solid var(--border)!important;border-radius:var(--r-xs)!important;font-size:13px!important;font-weight:500!important;padding:6px 14px!important;font-family:'Geist',sans-serif!important;transition:all 0.12s!important;box-shadow:var(--shadow-s)!important;}
+.stButton>button:not([kind="primary"]):hover{border-color:var(--border2)!important;color:var(--ink)!important;background:#fafafa!important;}
 
-/* ── Sidebar ── */
-section[data-testid="stSidebar"] {
-  background: var(--surface);
-  border-right: 1px solid var(--border);
-}
-section[data-testid="stSidebar"] > div { padding: 1.5rem 1.25rem; }
-section[data-testid="stSidebar"] * { color: var(--ink) !important; }
-section[data-testid="stSidebar"] .stTextArea textarea,
-section[data-testid="stSidebar"] .stNumberInput input {
-  background: var(--surface2) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: var(--radius-sm);
-  font-size: 13px !important;
-  color: var(--ink) !important;
-}
-section[data-testid="stSidebar"] .stTextArea textarea:focus,
-section[data-testid="stSidebar"] .stNumberInput input:focus {
-  border-color: var(--accent2) !important;
-  box-shadow: 0 0 0 3px rgba(45,122,82,0.12) !important;
-}
-section[data-testid="stSidebar"] hr { border-color: var(--border); margin: 1rem 0; }
+.stDownloadButton>button{background:var(--white)!important;color:var(--ink2)!important;border:1px solid var(--border)!important;border-radius:var(--r-xs)!important;font-size:13px!important;font-weight:500!important;font-family:'Geist',sans-serif!important;box-shadow:var(--shadow-s)!important;transition:all 0.12s!important;}
+.stDownloadButton>button:hover{color:var(--ink)!important;border-color:var(--border2)!important;}
 
-/* ── Sidebar sample buttons ── */
-section[data-testid="stSidebar"] .stButton > button {
-  background: var(--surface2) !important;
-  color: var(--ink2) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: var(--radius-sm) !important;
-  font-size: 12px !important;
-  font-weight: 500 !important;
-  padding: 6px 12px !important;
-  transition: all 0.15s !important;
-  text-align: left !important;
-}
-section[data-testid="stSidebar"] .stButton > button:hover {
-  background: var(--accent-bg) !important;
-  border-color: var(--accent2) !important;
-  color: var(--accent) !important;
-}
-
-/* ── Tabs ── */
-.stTabs [data-baseweb="tab-list"] {
-  gap: 2px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 3px;
-}
-.stTabs [data-baseweb="tab"] {
-  border-radius: 8px;
-  padding: 8px 20px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--ink3);
-  background: transparent;
-  border: none;
-  transition: all 0.15s;
-}
-.stTabs [aria-selected="true"] {
-  background: var(--surface) !important;
-  color: var(--ink) !important;
-  font-weight: 600 !important;
-  box-shadow: var(--shadow) !important;
-}
-
-/* ── Main text area ── */
-.stTextArea textarea {
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--ink);
-  font-size: 14px;
-  line-height: 1.65;
-  font-family: 'DM Sans', sans-serif;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-.stTextArea textarea:focus {
-  border-color: var(--accent2) !important;
-  box-shadow: 0 0 0 3px rgba(45,122,82,0.12) !important;
-}
-.stTextArea textarea::placeholder { color: var(--ink3); }
-
-/* ── File uploader ── */
-.stFileUploader section {
-  background: var(--surface);
-  border: 1.5px dashed var(--border2);
-  border-radius: var(--radius);
-  transition: border-color 0.15s;
-}
-.stFileUploader section:hover { border-color: var(--accent2); }
-
-/* ── Primary analyze button ── */
-.stButton > button[kind="primary"] {
-  background: var(--accent) !important;
-  color: #ffffff !important;
-  border: none !important;
-  border-radius: var(--radius-sm) !important;
-  font-weight: 600 !important;
-  font-size: 14px !important;
-  letter-spacing: 0.01em !important;
-  padding: 12px 0 !important;
-  transition: all 0.2s !important;
-  box-shadow: 0 1px 3px rgba(26,92,58,0.3) !important;
-}
-.stButton > button[kind="primary"]:hover {
-  background: var(--accent2) !important;
-  box-shadow: 0 4px 12px rgba(26,92,58,0.35) !important;
-  transform: translateY(-1px) !important;
-}
-.stButton > button[kind="primary"]:active { transform: translateY(0) !important; }
-
-/* ── Download button ── */
-.stDownloadButton > button {
-  background: var(--surface) !important;
-  color: var(--ink2) !important;
-  border: 1px solid var(--border2) !important;
-  border-radius: var(--radius-sm) !important;
-  font-weight: 500 !important;
-  font-size: 13px !important;
-  transition: all 0.15s !important;
-}
-.stDownloadButton > button:hover {
-  border-color: var(--ink2) !important;
-  color: var(--ink) !important;
-  background: var(--surface2) !important;
-}
-
-/* ── Spinner ── */
-.stSpinner > div { border-top-color: var(--accent) !important; }
-
-/* ── Custom card components ── */
-.rx-header-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 28px;
-}
-.rx-wordmark {
-  font-family: 'Fraunces', serif;
-  font-size: 20px;
-  font-weight: 400;
-  color: var(--ink);
-  letter-spacing: -0.02em;
-}
-.rx-wordmark span { color: var(--accent); }
-
-.rx-page-title {
-  font-family: 'Fraunces', serif;
-  font-size: 36px;
-  font-weight: 300;
-  color: var(--ink);
-  letter-spacing: -0.03em;
-  line-height: 1.15;
-  margin: 0 0 6px;
-}
-.rx-page-sub {
-  font-size: 14px;
-  color: var(--ink3);
-  font-weight: 400;
-  line-height: 1.5;
-}
-
-/* ── Severity pills ── */
-.pill {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 3px 10px; border-radius: 999px;
-  font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
-  text-transform: uppercase; font-family: 'DM Sans', sans-serif;
-}
-.pill-safe     { background: #e6f4ec; color: #14532d; }
-.pill-low      { background: #fef9c3; color: #713f12; }
-.pill-moderate { background: #fdf3e0; color: #8a5200; }
-.pill-high     { background: #fce8eb; color: #9b2335; }
-.pill-critical { background: #fce8eb; color: #7f1d1d; }
-
-/* ── Drug chip ── */
-.drug-chip {
-  display: inline-flex; align-items: center; gap: 4px;
-  background: var(--surface2); color: var(--ink2);
-  border: 1px solid var(--border);
-  padding: 3px 11px; border-radius: 999px;
-  font-size: 12px; font-weight: 500; margin: 2px;
-  letter-spacing: 0.01em;
-}
-
-/* ── Metric boxes ── */
-.metric-strip {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 10px;
-  margin-bottom: 28px;
-}
-.metric-box {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 14px 16px;
-  box-shadow: var(--shadow);
-}
-.metric-box .mlabel {
-  font-size: 10px; color: var(--ink3);
-  font-weight: 600; letter-spacing: 0.08em;
-  text-transform: uppercase; margin-bottom: 8px;
-}
-.metric-box .mval {
-  font-family: 'Fraunces', serif;
-  font-size: 24px; font-weight: 400;
-  color: var(--ink); line-height: 1;
-}
-
-/* ── Section label ── */
-.sec-label {
-  font-size: 10px; font-weight: 700;
-  letter-spacing: 0.1em; text-transform: uppercase;
-  color: var(--ink3); margin-bottom: 10px;
-}
-
-/* ── Info card ── */
-.rx-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 18px 22px;
-  margin-bottom: 12px;
-  box-shadow: var(--shadow);
-}
-.rx-card.danger  { border-left: 3px solid var(--red);   background: var(--red-bg); }
-.rx-card.warning { border-left: 3px solid #c97b00;      background: var(--amber-bg); }
-.rx-card.success { border-left: 3px solid var(--accent); background: var(--accent-bg); }
-.rx-card.info    { border-left: 3px solid var(--blue);   background: var(--blue-bg); }
-
-/* ── Interaction rows ── */
-.ix-item {
-  display: flex; gap: 16px; align-items: flex-start;
-  padding: 16px 0; border-bottom: 1px solid var(--border);
-}
-.ix-item:last-child { border-bottom: none; padding-bottom: 0; }
-.ix-pill-col { min-width: 90px; padding-top: 1px; }
-.ix-body {}
-.ix-drugs {
-  font-weight: 600; font-size: 14px; color: var(--ink);
-  margin-bottom: 4px;
-}
-.ix-arrow { color: var(--ink3); font-weight: 400; margin: 0 4px; }
-.ix-desc  { font-size: 13px; color: var(--ink2); line-height: 1.55; }
-.ix-rec   { font-size: 12px; color: var(--ink3); margin-top: 6px; }
-.ix-src   { font-size: 11px; color: var(--border2); margin-top: 3px; letter-spacing: 0.02em; }
-
-/* ── Alternative cards ── */
-.alt-block {
-  background: var(--accent-bg);
-  border: 1px solid #c4dfd0;
-  border-radius: 10px;
-  padding: 13px 16px;
-  margin-top: 10px;
-}
-.alt-name  { font-weight: 600; font-size: 14px; color: var(--accent); }
-.alt-class { font-size: 12px; color: var(--ink3); font-weight: 400; margin-left: 6px; }
-.alt-rat   { font-size: 13px; color: var(--ink2); margin-top: 4px; line-height: 1.5; }
-.alt-note  { font-size: 12px; color: var(--ink3); margin-top: 5px; }
-
-/* ── Tip box ── */
-.tip-box {
-  background: var(--blue-bg);
-  border: 1px solid #c8d9f0;
-  border-radius: var(--radius-sm);
-  padding: 10px 14px;
-  font-size: 12px;
-  color: var(--blue);
-  margin-bottom: 14px;
-  line-height: 1.6;
-}
-
-/* ── Sidebar label ── */
-.sb-label {
-  font-size: 10px; font-weight: 700;
-  letter-spacing: 0.1em; text-transform: uppercase;
-  color: var(--ink3); margin-bottom: 10px; display: block;
-}
-
-/* ── Status badge (URGENT / ROUTINE) ── */
-.status-badge {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 4px 12px; border-radius: 999px;
-  font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
-}
-.status-emergency { background: #fce8eb; color: #9b2335; }
-.status-urgent    { background: #fdf3e0; color: #8a5200; }
-.status-routine   { background: #e6f4ec; color: #14532d; }
-
-/* ── Divider ── */
-.rx-divider {
-  border: none; border-top: 1px solid var(--border); margin: 28px 0;
-}
-
-/* ── Report header ── */
-.report-meta {
-  font-size: 11px; color: var(--ink3); letter-spacing: 0.02em;
-}
-
-/* Expander */
-[data-testid="stExpander"] {
-  background: var(--surface);
-  border: 1px solid var(--border) !important;
-  border-radius: var(--radius) !important;
-  box-shadow: var(--shadow);
-}
-
-/* Number input */
-.stNumberInput input {
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--surface);
-  font-size: 14px;
-}
-.stNumberInput input:focus {
-  border-color: var(--accent2) !important;
-  box-shadow: 0 0 0 3px rgba(45,122,82,0.12) !important;
-}
-
-/* Caption */
-.stCaption { color: var(--ink3); font-size: 12px; }
+.stNumberInput input{border-radius:var(--r-sm);border:1.5px solid var(--border);background:var(--white);font-family:'Geist',sans-serif;font-size:14px;transition:border-color 0.15s;}
+.stNumberInput input:focus{border-color:var(--green-m)!important;box-shadow:0 0 0 3px rgba(22,163,74,0.12)!important;}
+.stSpinner>div{border-top-color:var(--ink)!important;}
+[data-testid="stExpander"]{background:var(--white)!important;border:1px solid var(--border)!important;border-radius:var(--r)!important;box-shadow:var(--shadow-s)!important;}
+.stImage img{border-radius:var(--r);box-shadow:var(--shadow-m);}
 </style>
 """, unsafe_allow_html=True)
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
-def pill(sev: str) -> str:
-    s = (sev or "SAFE").upper()
-    c = {"SAFE":"safe","LOW":"low","MODERATE":"moderate","HIGH":"high",
-         "CRITICAL":"critical","CONTRAINDICATED":"critical"}.get(s, "low")
-    icons = {"safe":"●","low":"●","moderate":"●","high":"●","critical":"●"}
-    return f'<span class="pill pill-{c}">{icons.get(c,"●")} {s}</span>'
+def sev_pill(s):
+    s=(s or "SAFE").upper()
+    cfg={"SAFE":("var(--green-l)","var(--green)"),"LOW":("var(--amber-l)","var(--amber)"),
+         "MODERATE":("var(--amber-b)","var(--amber)"),"HIGH":("var(--red-l)","var(--red)"),
+         "CRITICAL":("var(--red-l)","var(--red)"),"CONTRAINDICATED":("var(--red-l)","var(--red)")}
+    bg,fg=cfg.get(s,("var(--border)","var(--ink2)"))
+    return f'<span style="display:inline-flex;align-items:center;gap:4px;background:{bg};color:{fg};padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:0.06em;font-family:Geist,sans-serif">● {s}</span>'
+
+def urg_badge(u):
+    u=(u or "ROUTINE").upper()
+    cfg={"EMERGENCY":("var(--red-l)","var(--red)","⚠"),"URGENT":("var(--amber-l)","var(--amber)","!"),"ROUTINE":("var(--green-l)","var(--green)","✓")}
+    bg,fg,icon=cfg.get(u,("var(--border)","var(--ink2)","·"))
+    return f'<span style="display:inline-flex;align-items:center;gap:5px;background:{bg};color:{fg};padding:4px 12px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:0.06em;font-family:Geist,sans-serif">{icon} {u}</span>'
+
+def drug_chip(name):
+    return (f'<span style="display:inline-flex;align-items:center;gap:5px;background:var(--white);'
+            f'color:var(--ink2);border:1px solid var(--border);padding:4px 12px;border-radius:999px;'
+            f'font-size:12px;font-weight:500;font-family:Geist,sans-serif;margin:2px">'
+            f'<span style="width:6px;height:6px;border-radius:50%;background:var(--ink3);'
+            f'display:inline-block"></span>{name.title()}</span>')
+
+def run_check(raw_input, input_type, patient_info):
+    state={"raw_input":raw_input,"input_type":input_type,"drugs":[],"patient_info":patient_info,
+           "interactions":[],"contraindications":[],"web_findings":[],"severity_score":"SAFE",
+           "alternatives":[],"report":{},"error":None,"next":"ingestion",
+           "parallel_checks_complete":False,"alternatives_complete":False}
+    result=st.session_state.graph.invoke(state)
+    return result.get("report",{})
 
 
-def chips(names: list) -> str:
-    return " ".join(f'<span class="drug-chip">⬡ {n.title()}</span>' for n in names)
-
-
-def status_badge(urg: str) -> str:
-    urg = (urg or "ROUTINE").upper()
-    cls = {"EMERGENCY":"emergency","URGENT":"urgent","ROUTINE":"routine"}.get(urg,"routine")
-    icons = {"emergency":"⚠", "urgent":"!", "routine":"✓"}
-    return f'<span class="status-badge status-{cls}">{icons.get(cls,"●")} {urg}</span>'
-
-
-def sanitize_model_text(value) -> str:
-    if value is None:
-        return ""
-
-    text = str(value)
-    # Remove markdown code fences and any embedded HTML so model artifacts show as plain prose.
-    text = re.sub(r"```[a-zA-Z0-9_-]*", "", text)
-    text = text.replace("```", "")
-    text = re.sub(r"<[^>]+>", " ", text)
-    text = re.sub(r"\s+", " ", text).strip()
-    return html.escape(text)
-
-
-def normalize_alternatives_items(items):
-    if isinstance(items, list):
-        return [item for item in items if isinstance(item, dict)]
-    if isinstance(items, dict):
-        return [items]
-    if isinstance(items, str) and items.strip():
-        return [{"name": "", "class": "", "rationale": items, "notes": ""}]
-    return []
-
-
-def run_check(raw_input: str, input_type: str, patient_info: dict) -> dict:
-    initial_state = {
-        "raw_input": raw_input, "input_type": input_type,
-        "drugs": [], "patient_info": patient_info,
-        "interactions": [], "contraindications": [],
-        "web_findings": [], "severity_score": "SAFE",
-        "alternatives": [], "report": {},
-        "error": None, "next": "ingestion",
-        "parallel_checks_complete": False,
-        "alternatives_complete": False,
-    }
-    result = st.session_state.graph.invoke(initial_state)
-    return result.get("report", {})
-
-
-def render_report(report: dict):
-    if not report:
-        st.warning("No report was generated.")
-        return
-
-    sev    = report.get("overall_severity", "SAFE")
-    urg    = report.get("urgency", "ROUTINE")
-    drugs  = report.get("drugs_analyzed", [])
-    ixs    = report.get("interactions", [])
-    cis    = report.get("contraindications", [])
-    alts   = report.get("alternatives", [])
-    web    = report.get("web_findings", [])
-    summ   = report.get("clinical_summary", "")
-    recs   = report.get("key_recommendations", [])
-    rep_id = report.get("report_id", "")
-    gen_at = report.get("generated_at", "")[:19].replace("T", " ")
-
-    # ── Header row ────────────────────────────────────────────────────────────
-    c1, c2 = st.columns([3, 1])
-    with c1:
-        st.markdown(
-            f'<p class="report-meta">Report <strong>{rep_id}</strong> &nbsp;·&nbsp; {gen_at}</p>',
-            unsafe_allow_html=True
-        )
-    with c2:
-        st.download_button(
-            "↓ Export JSON",
-            data=json.dumps(report, indent=2),
-            file_name=f"rxcheck_{rep_id}.json",
-            mime="application/json",
-            use_container_width=True,
-        )
-
-    st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
-
-    # ── Metric strip ──────────────────────────────────────────────────────────
-    st.markdown(f"""
-    <div class="metric-strip">
-      <div class="metric-box">
-        <div class="mlabel">Severity</div>
-        <div>{pill(sev)}</div>
-      </div>
-      <div class="metric-box">
-        <div class="mlabel">Urgency</div>
-        <div>{status_badge(urg)}</div>
-      </div>
-      <div class="metric-box">
-        <div class="mlabel">Interactions</div>
-        <div class="mval">{len(ixs)}</div>
-      </div>
-      <div class="metric-box">
-        <div class="mlabel">Contraindications</div>
-        <div class="mval">{len(cis)}</div>
-      </div>
-      <div class="metric-box">
-        <div class="mlabel">Drugs</div>
-        <div class="mval">{len(drugs)}</div>
-      </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # ── Drug chips ────────────────────────────────────────────────────────────
-    if drugs:
-        st.markdown(chips(drugs) + "<div style='height:22px'></div>", unsafe_allow_html=True)
-
-    # ── Clinical summary ──────────────────────────────────────────────────────
-    if summ:
-        st.markdown('<p class="sec-label">Clinical Summary</p>', unsafe_allow_html=True)
-        st.markdown(
-            f'<div class="rx-card info" style="font-size:14px;line-height:1.7;color:#1a3c6e">{summ}</div>',
-            unsafe_allow_html=True
-        )
-
-    # ── Recommendations ───────────────────────────────────────────────────────
-    if recs:
-        st.markdown('<p class="sec-label">Key Recommendations</p>', unsafe_allow_html=True)
-        items_html = "".join(
-            f"<li style='margin-bottom:7px;font-size:13px;color:#1a3256;line-height:1.55'>{r}</li>"
-            for r in recs
-        )
-        st.markdown(
-            f'<div class="rx-card success"><ul style="margin:0;padding-left:18px">{items_html}</ul></div>',
-            unsafe_allow_html=True
-        )
-
-    # ── Interactions ──────────────────────────────────────────────────────────
-    st.markdown('<p class="sec-label">Drug Interactions</p>', unsafe_allow_html=True)
-    if ixs:
-        has_high = any(i.get("severity","").upper() in ("HIGH","CRITICAL","CONTRAINDICATED") for i in ixs)
-        card_cls = "danger" if has_high else "warning"
-        rows_html = ""
-        for ix in ixs:
-            rows_html += f"""
-            <div class="ix-item">
-              <div class="ix-pill-col">{pill(ix.get('severity','LOW'))}</div>
-              <div class="ix-body">
-                <div class="ix-drugs">
-                  {ix.get('drug1','?').title()}
-                  <span class="ix-arrow">↔</span>
-                  {ix.get('drug2','?').title()}
-                </div>
-                <div class="ix-desc">{ix.get('description','')}</div>
-                <div class="ix-rec">→ {ix.get('recommendation','')}</div>
-                <div class="ix-src">{ix.get('source','')}</div>
-              </div>
-            </div>"""
-        st.markdown(f'<div class="rx-card {card_cls}">{rows_html}</div>', unsafe_allow_html=True)
-    else:
-        st.markdown(
-            '<div class="rx-card success" style="font-size:14px;color:#14532d;font-weight:500">'
-            '✓ &nbsp;No drug–drug interactions detected.</div>',
-            unsafe_allow_html=True
-        )
-
-    # ── Contraindications ─────────────────────────────────────────────────────
-    if cis:
-        st.markdown('<p class="sec-label">Contraindications</p>', unsafe_allow_html=True)
-        rows_html = ""
-        for ci in cis:
-            rows_html += f"""
-            <div class="ix-item">
-              <div class="ix-pill-col">{pill(ci.get('severity','HIGH'))}</div>
-              <div class="ix-body">
-                <div class="ix-drugs">
-                  {ci.get('drug','?').title()}
-                  <span style="font-weight:400;color:#4a4a45;margin:0 4px">—</span>
-                  {ci.get('condition','')}
-                </div>
-                <div class="ix-desc">{ci.get('description','')}</div>
-                <div class="ix-rec">→ {ci.get('recommendation','')}</div>
-              </div>
-            </div>"""
-        st.markdown(f'<div class="rx-card danger">{rows_html}</div>', unsafe_allow_html=True)
-
-    # ── Alternatives ──────────────────────────────────────────────────────────
-    if alts:
-        st.markdown('<p class="sec-label">Suggested Alternatives</p>', unsafe_allow_html=True)
-        for alt in alts:
-            if not isinstance(alt, dict):
-                continue
-            original_drug = sanitize_model_text(alt.get("original_drug", "")).title()
-            reason_for_change = sanitize_model_text(alt.get("reason_for_change", ""))
-
-            with st.container(border=True):
-                if original_drug:
-                    st.markdown(f"**{original_drug}**")
-                if reason_for_change:
-                    st.write(reason_for_change)
-
-                for a in normalize_alternatives_items(alt.get("alternatives", [])):
-                    alt_name = sanitize_model_text(a.get("name", "")).title()
-                    alt_class = sanitize_model_text(a.get("class", ""))
-                    alt_rationale = sanitize_model_text(a.get("rationale", ""))
-                    alt_notes = sanitize_model_text(a.get("notes", ""))
-
-                    line = alt_name or "Alternative"
-                    if alt_class:
-                        line = f"{line} ({alt_class})"
-                    st.markdown(f"- **{line}**")
-                    if alt_rationale:
-                        st.write(alt_rationale)
-                    if alt_notes:
-                        st.caption(alt_notes)
-
-    # ── Literature findings ───────────────────────────────────────────────────
-    if web:
-        with st.expander(f"Literature & Adverse Event Findings  ({len(web)})", expanded=False):
-            for wf in web:
-                sig = wf.get("clinical_significance", "LOW")
-                drugs_str = ", ".join(wf.get("drugs_involved", []))
-                st.markdown(f"""
-                <div style="padding:12px 0;border-bottom:1px solid var(--border)">
-                  <div style="font-size:14px;font-weight:500;color:var(--ink);margin-bottom:5px">
-                    {wf.get('finding','')}
-                  </div>
-                  <div style="font-size:12px;color:var(--ink3);display:flex;gap:12px;align-items:center">
-                    <span>{drugs_str}</span>
-                    <span>·</span>
-                    {pill(sig)}
-                    <span>·</span>
-                    <span>{wf.get('source','')}</span>
-                  </div>
-                </div>""", unsafe_allow_html=True)
-
-    # ── Disclaimer ────────────────────────────────────────────────────────────
-    st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
-    st.caption(f"⚕ {report.get('disclaimer','')}")
-
-
-# ── Session state ─────────────────────────────────────────────────────────────
 if "graph" not in st.session_state:
-    with st.spinner("Initialising pipeline…"):
+    with st.spinner("Warming up pipeline…"):
         from graph.builder import build_graph
-        st.session_state.graph = build_graph()
-
-if "report" not in st.session_state:
-  st.session_state.report = None
-
-if "sample_text" not in st.session_state:
-  st.session_state.sample_text = ""
+        st.session_state.graph=build_graph()
+if "report" not in st.session_state: st.session_state.report=None
+if "sample_text" not in st.session_state: st.session_state.sample_text=""
 
 
-# ── Sidebar ───────────────────────────────────────────────────────────────────
-with st.sidebar:
-    # Wordmark
-    st.markdown("""
-    <div style="padding:4px 0 20px">
-      <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:400;
-                  letter-spacing:-0.03em;color:#1a1a18">
-        Rx<span style="color:#1a5c3a">Check</span>
-      </div>
-      <div style="font-size:11px;color:#8a8a82;margin-top:3px;font-weight:400">
-        Drug Interaction Intelligence
-      </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown("---")
-
-    # Patient info
-    st.markdown('<span class="sb-label">Patient (optional)</span>', unsafe_allow_html=True)
-    patient_age = st.number_input("Age", min_value=0, max_value=120, value=0, step=1)
-    patient_conditions = st.text_area(
-        "Conditions", placeholder="Type 2 diabetes\nHypertension\nRenal impairment",
-        height=80
-    )
-    patient_allergies = st.text_area(
-        "Allergies", placeholder="Penicillin\nSulfa drugs",
-        height=68
-    )
-
-    st.markdown("---")
-
-    # Quick examples
-    st.markdown('<span class="sb-label">Quick examples</span>', unsafe_allow_html=True)
-    samples = {
-        "Warfarin + Aspirin":  "Warfarin 5mg once daily, Aspirin 81mg once daily, Omeprazole 20mg OD",
-        "Serotonin risk":      "Sertraline 50mg OD, Tramadol 50mg TID PRN",
-        "Polypharmacy":        "Warfarin 5mg, Aspirin 81mg, Ibuprofen 400mg TID, Fluoxetine 20mg OD",
-        "Safe combination":    "Amlodipine 5mg OD, Atorvastatin 40mg OD, Ramipril 5mg OD",
-    }
-    for label, text in samples.items():
-        if st.button(label, use_container_width=True, key=f"s_{label}"):
-            st.session_state.sample_text = text
-            st.rerun()
-
-    st.markdown("---")
-    st.markdown(
-        '<div style="font-size:11px;color:#8a8a82;line-height:1.6">'
-        'Powered by <strong>LangGraph</strong> · <strong>Ollama</strong><br>'
-        'Free · local · open source'
-        '</div>',
-        unsafe_allow_html=True
-    )
-
-
-# ── Main ──────────────────────────────────────────────────────────────────────
-patient_info = {
-    "age":        int(patient_age) if patient_age else None,
-    "conditions": [c.strip() for c in patient_conditions.splitlines() if c.strip()],
-    "allergies":  [a.strip() for a in patient_allergies.splitlines()  if a.strip()],
-}
-
-# Page title
+# ── NAV ───────────────────────────────────────────────────────────────────────
 st.markdown("""
-<div style="margin-bottom:32px">
-  <h1 class="rx-page-title">Drug Interaction<br>Checker</h1>
-  <p class="rx-page-sub">
-    Enter a prescription, upload a PDF, or photograph a label —<br>
-    the multi-agent pipeline checks interactions, contraindications, and suggests alternatives.
-  </p>
+<div style="background:var(--white);border-bottom:1px solid var(--border);padding:0 40px;
+            display:flex;align-items:center;justify-content:space-between;height:56px">
+  <div style="display:flex;align-items:center;gap:10px">
+    <div style="width:28px;height:28px;background:var(--ink);border-radius:7px;
+                display:flex;align-items:center;justify-content:center">
+      <span style="color:white;font-size:14px">⚕</span>
+    </div>
+    <span style="font-family:'Instrument Serif',serif;font-size:20px;color:var(--ink);
+                 letter-spacing:-0.02em">RxCheck</span>
+  </div>
+  <span style="font-size:12px;color:var(--ink3)">Free · local · open source · LangGraph + Ollama</span>
 </div>
 """, unsafe_allow_html=True)
 
-# Input tabs
-tab_text, tab_pdf, tab_img = st.tabs(["✏  Text", "  PDF", "◧  Image"])
+# ── HERO ──────────────────────────────────────────────────────────────────────
+st.markdown("""
+<div style="background:var(--white);border-bottom:1px solid var(--border);padding:44px 40px 36px">
+  <div style="max-width:780px;margin:0 auto">
+    <p style="font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;
+              color:var(--ink3);margin-bottom:10px">Drug Safety Check</p>
+    <h1 style="font-family:'Instrument Serif',serif;font-size:42px;font-weight:400;
+               color:var(--ink);letter-spacing:-0.03em;line-height:1.1;margin-bottom:12px">
+      Check your prescription<br>
+      <em style="color:var(--ink2)">before it's dispensed</em>
+    </h1>
+    <p style="font-size:15px;color:var(--ink2);line-height:1.65;max-width:540px">
+      Paste a prescription, upload a PDF, or photograph a label — 
+      the multi-agent pipeline checks interactions, contraindications, 
+      and suggests safer alternatives.
+    </p>
+  </div>
+</div>
+""", unsafe_allow_html=True)
 
-with tab_text:
+# ── INPUT ZONE ────────────────────────────────────────────────────────────────
+st.markdown('<div style="max-width:820px;margin:0 auto;padding:32px 40px 0">', unsafe_allow_html=True)
+
+tab_t, tab_p, tab_i = st.tabs(["✏  Text input", "  PDF upload", "◧  Image / photo"])
+patient_info_val = {"age":None,"conditions":[],"allergies":[]}
+
+with tab_t:
+    st.markdown("<div style='height:14px'></div>", unsafe_allow_html=True)
+
+    # Example buttons
+    st.markdown('<p style="font-size:12px;color:var(--ink3);margin-bottom:8px;font-weight:500;letter-spacing:0.02em">Quick examples</p>', unsafe_allow_html=True)
+    ex1,ex2,ex3,ex4=st.columns(4)
+    examples=[("Warfarin + Aspirin","Warfarin 5mg OD, Aspirin 81mg OD, Omeprazole 20mg OD"),
+              ("Serotonin risk","Sertraline 50mg OD, Tramadol 50mg TID PRN"),
+              ("Polypharmacy","Warfarin 5mg, Aspirin 81mg, Ibuprofen 400mg TID, Fluoxetine 20mg OD"),
+              ("Safe combo","Amlodipine 5mg OD, Atorvastatin 40mg OD, Ramipril 5mg OD")]
+    for col,(label,text) in zip([ex1,ex2,ex3,ex4],examples):
+        with col:
+            if st.button(label,key=f"ex_{label}",use_container_width=True):
+                st.session_state.sample_text=text
+                st.rerun()
+
+    st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
+
+    prescription_text=st.text_area("prescription",value=st.session_state.sample_text,height=120,
+        placeholder="e.g.  Warfarin 5mg once daily,  Aspirin 81mg OD,  Metformin 500mg BD")
+
+    with st.expander("+ Add patient context  (age, conditions, allergies)", expanded=False):
+        pc1,pc2,pc3=st.columns([1,2,2])
+        with pc1: p_age=st.number_input("Age",min_value=0,max_value=120,value=0,step=1)
+        with pc2: p_cond=st.text_area("Conditions",placeholder="Type 2 diabetes\nHypertension",height=80)
+        with pc3: p_allerg=st.text_area("Allergies",placeholder="Penicillin\nSulfa drugs",height=80)
+        patient_info_val={"age":int(p_age) if p_age else None,
+                          "conditions":[c.strip() for c in p_cond.splitlines() if c.strip()],
+                          "allergies":[a.strip() for a in p_allerg.splitlines() if a.strip()]}
+
     st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
-    prescription_text = st.text_area(
-        "prescription",
-        value=st.session_state.sample_text,
-        height=130,
-        placeholder="e.g.  Warfarin 5mg once daily,  Aspirin 81mg OD,  Metformin 500mg BD",
-        label_visibility="collapsed",
-    )
-    if st.button("Analyse prescription  →", type="primary", use_container_width=True, key="btn_t"):
-        if not prescription_text.strip():
-            st.warning("Please enter a prescription.")
+    if st.button("Analyse prescription  →",type="primary",use_container_width=True,key="btn_t"):
+        if not prescription_text.strip(): st.warning("Please enter a prescription.")
         else:
             with st.spinner("Running analysis…"):
-                try:
-                    st.session_state.report = run_check(prescription_text, "text", patient_info)
-                except Exception as e:
-                    st.error(f"Error: {e}")
+                try: st.session_state.report=run_check(prescription_text,"text",patient_info_val)
+                except Exception as e: st.error(f"Pipeline error: {e}")
 
-with tab_pdf:
+with tab_p:
+    st.markdown("<div style='height:14px'></div>", unsafe_allow_html=True)
+    up_pdf=st.file_uploader("pdf",type=["pdf"])
     st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
-    up_pdf = st.file_uploader("pdf", type=["pdf"], label_visibility="collapsed")
-    if st.button("Analyse PDF  →", type="primary", use_container_width=True, key="btn_p"):
-        if not up_pdf:
-            st.warning("Please upload a PDF.")
+    if st.button("Analyse PDF  →",type="primary",use_container_width=True,key="btn_p"):
+        if not up_pdf: st.warning("Please upload a PDF.")
         else:
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-                tmp.write(up_pdf.read())
-                path = tmp.name
-            with st.spinner("Extracting text and analysing…"):
+            with tempfile.NamedTemporaryFile(delete=False,suffix=".pdf") as tmp:
+                tmp.write(up_pdf.read()); path=tmp.name
+            with st.spinner("Extracting and analysing…"):
                 try:
-                    st.session_state.report = run_check(path, "pdf", patient_info)
+                    st.session_state.report=run_check(path,"pdf",patient_info_val)
                     os.unlink(path)
                 except Exception as e:
-                  try:
-                    os.unlink(path)
-                  except Exception:
-                    pass
-                    st.error(f"Error: {e}")
+                    try: os.unlink(path)
+                    except: pass
+                    st.error(f"Pipeline error: {e}")
 
-with tab_img:
+with tab_i:
+    st.markdown("<div style='height:14px'></div>", unsafe_allow_html=True)
+    st.markdown("""<div style="background:var(--blue-b);border:1px solid var(--blue-l);
+        border-radius:var(--r-sm);padding:10px 14px;margin-bottom:12px;font-size:13px;color:var(--blue)">
+      <strong>Tip</strong> — use a sharp, well-lit photo. Tesseract OCR runs first; if it finds &lt;20
+      characters a vision model (<code>llama3.2-vision</code> or <code>llava</code>) is tried automatically.
+    </div>""", unsafe_allow_html=True)
+    up_img=st.file_uploader("image",type=["png","jpg","jpeg","tiff","bmp"])
+    if up_img: st.image(up_img,width=260)
     st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
-    st.markdown("""
-    <div class="tip-box">
-      <strong>Tip</strong> — use a sharp, well-lit photo of the label.
-      Tesseract OCR runs first; if it finds fewer than 20 characters a vision model
-      (<code>llama3.2-vision</code> or <code>llava</code>) is tried automatically.
-    </div>
-    """, unsafe_allow_html=True)
-    up_img = st.file_uploader("image", type=["png","jpg","jpeg","tiff","bmp"],
-                               label_visibility="collapsed")
-    if up_img:
-        st.image(up_img, width=300)
-    if st.button("Analyse image  →", type="primary", use_container_width=True, key="btn_i"):
-        if not up_img:
-            st.warning("Please upload an image.")
+    if st.button("Analyse image  →",type="primary",use_container_width=True,key="btn_i"):
+        if not up_img: st.warning("Please upload an image.")
         else:
-            ext = os.path.splitext(up_img.name)[1] or ".png"
-            with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
-                tmp.write(up_img.read())
-                path = tmp.name
+            ext=os.path.splitext(up_img.name)[1] or ".png"
+            with tempfile.NamedTemporaryFile(delete=False,suffix=ext) as tmp:
+                tmp.write(up_img.read()); path=tmp.name
             with st.spinner("OCR → vision model → analysis…"):
                 try:
-                    st.session_state.report = run_check(path, "image", patient_info)
+                    st.session_state.report=run_check(path,"image",patient_info_val)
                     os.unlink(path)
                 except Exception as e:
-                  try:
-                    os.unlink(path)
-                  except Exception:
-                    pass
-                    st.error(f"Error: {e}")
+                    try: os.unlink(path)
+                    except: pass
+                    st.error(f"Pipeline error: {e}")
 
-# ── Report output ──────────────────────────────────────────────────────────────
+st.markdown('</div>', unsafe_allow_html=True)
+
+
+# ── REPORT ────────────────────────────────────────────────────────────────────
 if st.session_state.report:
-    st.markdown("<hr class='rx-divider'>", unsafe_allow_html=True)
-    report = st.session_state.report
-    err = report.get("error") if isinstance(report, dict) else None
+    r=st.session_state.report
+    err=r.get("error") if isinstance(r,dict) else None
     if err:
-        st.error(f"⚠ {err}")
+        st.markdown(f'<div style="max-width:820px;margin:24px auto;padding:0 40px">'
+                    f'<div style="background:var(--red-b);border:1px solid var(--red-l);'
+                    f'border-radius:var(--r);padding:16px 20px;color:var(--red);font-size:14px">⚠ {err}</div>'
+                    f'</div>', unsafe_allow_html=True)
     else:
-        render_report(report)
+        sev=r.get("overall_severity","SAFE"); urg=r.get("urgency","ROUTINE")
+        drugs=r.get("drugs_analyzed",[]); ixs=r.get("interactions",[])
+        cis=r.get("contraindications",[]); alts=r.get("alternatives",[])
+        web=r.get("web_findings",[]); summ=r.get("clinical_summary","")
+        recs=r.get("key_recommendations",[]); rep_id=r.get("report_id","")
+        gen_at=r.get("generated_at","")[:19].replace("T"," ")
+        disclm=r.get("disclaimer","")
+
+        # ── Pipeline steps ────────────────────────────────────────────────────
+        steps=["Prescription parsed","Interactions checked","Severity scored","Report ready"]
+        steps_html="".join([
+            f'<div style="display:flex;align-items:center;flex:1">'
+            f'<div style="display:flex;align-items:center;gap:8px">'
+            f'<div style="width:22px;height:22px;border-radius:50%;background:var(--ink);'
+            f'display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+            f'<span style="color:white;font-size:10px;font-weight:700">{i+1}</span></div>'
+            f'<span style="font-size:12px;font-weight:600;color:var(--ink)">{lbl}</span></div>'
+            f'{"<div style=flex:1;height:1px;background:var(--border);margin:0 12px></div>" if i<3 else ""}'
+            f'</div>'
+            for i,lbl in enumerate(steps)
+        ])
+        st.markdown(f"""
+        <div style="background:var(--white);border-top:1px solid var(--border);
+                    border-bottom:1px solid var(--border);padding:18px 40px">
+          <div style="max-width:820px;margin:0 auto">
+            <p style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
+                      color:var(--ink3);margin-bottom:12px">Analysis pipeline — complete</p>
+            <div style="display:flex;align-items:center">{steps_html}</div>
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown('<div style="max-width:820px;margin:0 auto;padding:28px 40px">', unsafe_allow_html=True)
+
+        # ── Alert banner ──────────────────────────────────────────────────────
+        has_issue=sev not in ("SAFE","LOW") or cis
+        if has_issue:
+            sev_cfg={"MODERATE":("var(--amber-b)","var(--amber-l)","var(--amber)","⚠"),
+                     "HIGH":("var(--red-b)","var(--red-l)","var(--red)","⚠"),
+                     "CRITICAL":("var(--red-b)","var(--red-l)","var(--red)","⚠")}
+            bb,bl,bf,bi=sev_cfg.get(sev,("var(--amber-b)","var(--amber-l)","var(--amber)","⚠"))
+            parts=[]
+            if ixs: parts.append(f"{len(ixs)} interaction{'s' if len(ixs)>1 else ''}")
+            if cis: parts.append(f"{len(cis)} contraindication{'s' if len(cis)>1 else ''}")
+            st.markdown(f"""
+            <div style="background:{bb};border:1px solid {bl};border-radius:var(--r);
+                        padding:16px 20px;margin-bottom:20px;
+                        display:flex;align-items:center;justify-content:space-between">
+              <div style="display:flex;align-items:center;gap:14px">
+                <span style="font-size:20px;color:{bf}">{bi}</span>
+                <div>
+                  <p style="font-size:14px;font-weight:600;color:{bf};margin-bottom:2px">{sev} severity detected</p>
+                  <p style="font-size:13px;color:{bf};opacity:0.75">{" · ".join(parts)}</p>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">{sev_pill(sev)}{urg_badge(urg)}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown(f"""
+            <div style="background:var(--green-b);border:1px solid var(--green-l);border-radius:var(--r);
+                        padding:16px 20px;margin-bottom:20px;
+                        display:flex;align-items:center;justify-content:space-between">
+              <div style="display:flex;align-items:center;gap:14px">
+                <span style="font-size:20px;color:var(--green)">✓</span>
+                <p style="font-size:14px;font-weight:600;color:var(--green)">No significant interactions detected</p>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">{sev_pill(sev)}{urg_badge(urg)}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        # ── Meta + chips + download ───────────────────────────────────────────
+        cl,cr=st.columns([3,1])
+        with cl:
+            chips_html=" ".join(drug_chip(d) for d in drugs)
+            st.markdown(f'<p style="font-size:11px;color:var(--ink3);margin-bottom:8px">{rep_id} · {gen_at}</p>'
+                        f'<div style="margin-bottom:18px">{chips_html}</div>',unsafe_allow_html=True)
+        with cr:
+            st.download_button("↓ Export JSON",data=json.dumps(r,indent=2),
+                               file_name=f"rxcheck_{rep_id}.json",mime="application/json",
+                               use_container_width=True)
+
+        # ── Summary ───────────────────────────────────────────────────────────
+        if summ:
+            st.markdown(f"""
+            <div style="background:var(--blue-b);border:1px solid var(--blue-l);border-radius:var(--r);
+                        padding:18px 22px;margin-bottom:16px">
+              <p style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
+                        color:var(--blue);margin-bottom:8px">Clinical Summary</p>
+              <p style="font-size:14px;color:var(--blue);line-height:1.7">{summ}</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+        # ── Recommendations ───────────────────────────────────────────────────
+        if recs:
+            items="".join(f'<li style="margin-bottom:7px;font-size:14px;color:var(--green);line-height:1.55">{rec}</li>' for rec in recs)
+            st.markdown(f"""
+            <div style="background:var(--green-b);border:1px solid var(--green-l);border-radius:var(--r);
+                        padding:18px 22px;margin-bottom:16px">
+              <p style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
+                        color:var(--green);margin-bottom:10px">Key Recommendations</p>
+              <ul style="margin:0;padding-left:18px">{items}</ul>
+            </div>
+            """, unsafe_allow_html=True)
+
+        # ── Two-column: interactions + contraindications ───────────────────────
+        col_ix,col_ci=st.columns(2,gap="medium")
+
+        def left_color(s):
+            return {"HIGH":"var(--red-m)","CRITICAL":"var(--red-m)",
+                    "CONTRAINDICATED":"var(--red-m)","MODERATE":"var(--amber-m)"}.get(s.upper(),"var(--border2)")
+
+        with col_ix:
+            st.markdown(f'<p style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink3);margin-bottom:10px">Drug Interactions ({len(ixs)})</p>',unsafe_allow_html=True)
+            if ixs:
+                for ix in ixs:
+                    s=ix.get("severity","LOW")
+                    st.markdown(f"""
+                    <div style="background:var(--white);border:1px solid var(--border);border-left:3px solid {left_color(s)};
+                                border-radius:var(--r);padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow-s)">
+                      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                        {sev_pill(s)}
+                        <span style="font-size:13px;font-weight:600;color:var(--ink)">
+                          {ix.get('drug1','?').title()} ↔ {ix.get('drug2','?').title()}
+                        </span>
+                      </div>
+                      <p style="font-size:13px;color:var(--ink2);line-height:1.55;margin-bottom:6px">{ix.get('description','')}</p>
+                      <p style="font-size:12px;color:var(--ink3)">→ {ix.get('recommendation','')}</p>
+                      <p style="font-size:11px;color:var(--border2);margin-top:4px">{ix.get('source','')}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+            else:
+                st.markdown('<div style="background:var(--green-b);border:1px solid var(--green-l);border-radius:var(--r);padding:14px 16px;font-size:14px;color:var(--green);font-weight:500">✓ No interactions found</div>',unsafe_allow_html=True)
+
+        with col_ci:
+            st.markdown(f'<p style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink3);margin-bottom:10px">Contraindications ({len(cis)})</p>',unsafe_allow_html=True)
+            if cis:
+                for ci in cis:
+                    s=ci.get("severity","HIGH")
+                    st.markdown(f"""
+                    <div style="background:var(--white);border:1px solid var(--border);border-left:3px solid {left_color(s)};
+                                border-radius:var(--r);padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow-s)">
+                      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                        {sev_pill(s)}
+                        <span style="font-size:13px;font-weight:600;color:var(--ink)">{ci.get('drug','?').title()}</span>
+                      </div>
+                      <p style="font-size:12px;font-weight:500;color:var(--ink2);margin-bottom:6px">{ci.get('condition','')}</p>
+                      <p style="font-size:13px;color:var(--ink2);line-height:1.55;margin-bottom:6px">{ci.get('description','')}</p>
+                      <p style="font-size:12px;color:var(--ink3)">→ {ci.get('recommendation','')}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+            else:
+                st.markdown('<div style="background:var(--green-b);border:1px solid var(--green-l);border-radius:var(--r);padding:14px 16px;font-size:14px;color:var(--green);font-weight:500">✓ No contraindications found</div>',unsafe_allow_html=True)
+
+        # ── Alternatives ──────────────────────────────────────────────────────
+        if alts:
+            st.markdown(f'<p style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink3);margin:20px 0 10px">Suggested Alternatives ({len(alts)})</p>',unsafe_allow_html=True)
+            n=min(len(alts),2)
+            alt_cols=st.columns(n,gap="medium")
+            for col,alt in zip(alt_cols*(len(alts)//n+1),alts):
+                with col:
+                    inner=""
+                    for a in alt.get("alternatives",[]):
+                        inner+=f'<div style="background:#f9fafb;border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 14px;margin-top:8px"><p style="font-size:13px;font-weight:600;color:var(--green);margin-bottom:3px">→ {a.get("name","").title()} <span style="font-weight:400;font-size:11px;color:var(--ink3)">· {a.get("class","")}</span></p><p style="font-size:13px;color:var(--ink2);line-height:1.5;margin-bottom:4px">{a.get("rationale","")}</p><p style="font-size:11px;color:var(--ink3)">{a.get("notes","")}</p></div>'
+                    st.markdown(f'<div style="background:var(--white);border:1px solid var(--border);border-left:3px solid var(--green-m);border-radius:var(--r);padding:16px 18px;box-shadow:var(--shadow-s)"><p style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:3px">{alt.get("original_drug","").title()}</p><p style="font-size:12px;color:var(--ink2);margin-bottom:4px">{alt.get("reason_for_change","")}</p>{inner}</div>',unsafe_allow_html=True)
+
+        # ── Literature ────────────────────────────────────────────────────────
+        if web:
+            st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+            with st.expander(f"Literature & adverse event findings  ({len(web)})", expanded=False):
+                for wf in web:
+                    sig=wf.get("clinical_significance","LOW")
+                    ds=", ".join(wf.get("drugs_involved",[]))
+                    st.markdown(f'<div style="padding:12px 4px;border-bottom:1px solid var(--border)"><p style="font-size:14px;font-weight:500;color:var(--ink);margin-bottom:5px">{wf.get("finding","")}</p><div style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--ink3)"><span>{ds}</span><span>·</span>{sev_pill(sig)}<span>·</span><span>{wf.get("source","")}</span></div></div>',unsafe_allow_html=True)
+
+        # ── Disclaimer ────────────────────────────────────────────────────────
+        st.markdown(f'<div style="margin-top:32px;padding-top:20px;border-top:1px solid var(--border)"><p style="font-size:12px;color:var(--ink3);line-height:1.6">⚕ {disclm}</p></div>',unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+# ── Footer ─────────────────────────────────────────────────────────────────────
+st.markdown("""
+<div style="border-top:1px solid var(--border);background:var(--white);padding:16px 40px;margin-top:48px">
+  <div style="max-width:820px;margin:0 auto;display:flex;align-items:center;justify-content:space-between">
+    <span style="font-family:'Instrument Serif',serif;font-size:16px;color:var(--ink)">RxCheck</span>
+    <span style="font-size:12px;color:var(--ink3)">Free · local · open source · not medical advice</span>
+  </div>
+</div>
+""", unsafe_allow_html=True)
