@@ -19,6 +19,7 @@ st.markdown("""
 :root {
   --cream:#f7f5f0;--white:#ffffff;--ink:#18181a;--ink2:#52525b;--ink3:#a1a1aa;
   --border:#e4e4e7;--border2:#d4d4d8;
+  --content-w:1120px;--report-w:860px;
   --green:#166534;--green-m:#16a34a;--green-l:#dcfce7;--green-b:#f0fdf4;
   --red:#991b1b;--red-m:#dc2626;--red-l:#fee2e2;--red-b:#fff1f2;
   --amber:#92400e;--amber-m:#d97706;--amber-l:#fde68a;--amber-b:#fffbeb;
@@ -36,9 +37,10 @@ html,body,[class*="css"]{font-family:'Geist',sans-serif;}
 section[data-testid="stSidebar"]{display:none!important;}
 [data-testid="collapsedControl"]{display:none!important;}
 
-.stTabs [data-baseweb="tab-list"]{gap:2px;background:#f4f4f5;border:1px solid var(--border);border-radius:var(--r-sm);padding:3px;width:fit-content;}
-.stTabs [data-baseweb="tab"]{border-radius:var(--r-xs);padding:7px 18px;font-size:13px;font-weight:500;color:var(--ink2);background:transparent;border:none;font-family:'Geist',sans-serif;}
+.stTabs [data-baseweb="tab-list"]{gap:2px;background:#f4f4f5;border:1px solid var(--border);border-radius:var(--r-sm);padding:3px;width:fit-content;margin:0 0 14px 0;}
+.stTabs [data-baseweb="tab"]{border-radius:var(--r-xs);padding:7px 18px;font-size:13px;font-weight:500;color:var(--ink2);background:transparent;border:none;font-family:'Geist',sans-serif;height:34px;display:flex;align-items:center;justify-content:center;}
 .stTabs [aria-selected="true"]{background:var(--white)!important;color:var(--ink)!important;font-weight:600!important;box-shadow:var(--shadow-s)!important;}
+.stTabs [data-baseweb="tab-panel"]{padding-top:0!important;}
 
 .stTextArea textarea{border-radius:var(--r-sm);border:1.5px solid var(--border);background:var(--white);color:var(--ink);font-size:15px;line-height:1.7;font-family:'Geist',sans-serif;padding:14px 16px;transition:border-color 0.15s,box-shadow 0.15s;box-shadow:var(--shadow-s);}
 .stTextArea textarea:focus{border-color:var(--green-m)!important;box-shadow:0 0 0 3px rgba(22,163,74,0.12)!important;}
@@ -50,7 +52,7 @@ section[data-testid="stSidebar"]{display:none!important;}
 
 .stButton>button[kind="primary"]{background:var(--ink)!important;color:#fff!important;border:none!important;border-radius:var(--r-sm)!important;font-weight:600!important;font-size:15px!important;letter-spacing:-0.01em!important;padding:13px 0!important;font-family:'Geist',sans-serif!important;box-shadow:var(--shadow-m)!important;transition:all 0.15s!important;}
 .stButton>button[kind="primary"]:hover{background:#27272a!important;box-shadow:var(--shadow-l)!important;transform:translateY(-1px)!important;}
-.stButton>button:not([kind="primary"]){background:var(--white)!important;color:var(--ink2)!important;border:1px solid var(--border)!important;border-radius:var(--r-xs)!important;font-size:13px!important;font-weight:500!important;padding:6px 14px!important;font-family:'Geist',sans-serif!important;transition:all 0.12s!important;box-shadow:var(--shadow-s)!important;}
+.stButton>button:not([kind="primary"]){background:var(--white)!important;color:var(--ink2)!important;border:1px solid var(--border)!important;border-radius:var(--r-xs)!important;font-size:13px!important;font-weight:500!important;padding:6px 14px!important;font-family:'Geist',sans-serif!important;transition:all 0.12s!important;box-shadow:var(--shadow-s)!important;min-height:40px;}
 .stButton>button:not([kind="primary"]):hover{border-color:var(--border2)!important;color:var(--ink)!important;background:#fafafa!important;}
 
 .stDownloadButton>button{background:var(--white)!important;color:var(--ink2)!important;border:1px solid var(--border)!important;border-radius:var(--r-xs)!important;font-size:13px!important;font-weight:500!important;font-family:'Geist',sans-serif!important;box-shadow:var(--shadow-s)!important;transition:all 0.12s!important;}
@@ -61,6 +63,17 @@ section[data-testid="stSidebar"]{display:none!important;}
 .stSpinner>div{border-top-color:var(--ink)!important;}
 [data-testid="stExpander"]{background:var(--white)!important;border:1px solid var(--border)!important;border-radius:var(--r)!important;box-shadow:var(--shadow-s)!important;}
 .stImage img{border-radius:var(--r);box-shadow:var(--shadow-m);}
+
+[data-testid="column"] .stButton>button{white-space:nowrap;}
+[data-testid="stHorizontalBlock"]{align-items:stretch;}
+
+@media (max-width: 900px){
+  [data-testid="stHorizontalBlock"]{gap:8px!important;}
+}
+
+@media (max-width: 768px){
+  .stTabs [data-baseweb="tab"]{padding:6px 12px;font-size:12px;}
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -107,6 +120,7 @@ if "sample_text" not in st.session_state: st.session_state.sample_text=""
 st.markdown("""
 <div style="background:var(--white);border-bottom:1px solid var(--border);padding:0 40px;
             display:flex;align-items:center;justify-content:space-between;height:56px">
+  <div style="width:100%;max-width:var(--content-w);margin:0 auto;display:flex;align-items:center;justify-content:space-between">
   <div style="display:flex;align-items:center;gap:10px">
     <div style="width:28px;height:28px;background:var(--ink);border-radius:7px;
                 display:flex;align-items:center;justify-content:center">
@@ -117,12 +131,14 @@ st.markdown("""
   </div>
   <span style="font-size:12px;color:var(--ink3)">Free · local · open source · LangGraph + Ollama</span>
 </div>
+</div>
 """, unsafe_allow_html=True)
 
 # ── HERO ──────────────────────────────────────────────────────────────────────
 st.markdown("""
 <div style="background:var(--white);border-bottom:1px solid var(--border);padding:44px 40px 36px">
-  <div style="max-width:780px;margin:0 auto">
+  <div style="max-width:var(--content-w);margin:0 auto">
+  <div style="max-width:780px">
     <p style="font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;
               color:var(--ink3);margin-bottom:10px">Drug Safety Check</p>
     <h1 style="font-family:'Instrument Serif',serif;font-size:42px;font-weight:400;
@@ -137,12 +153,13 @@ st.markdown("""
     </p>
   </div>
 </div>
+</div>
 """, unsafe_allow_html=True)
 
 # ── INPUT ZONE ────────────────────────────────────────────────────────────────
-st.markdown('<div style="max-width:820px;margin:0 auto;padding:32px 40px 0">', unsafe_allow_html=True)
+st.markdown('<div style="max-width:var(--report-w);margin:0 auto;padding:28px 40px 0">', unsafe_allow_html=True)
 
-tab_t, tab_p, tab_i = st.tabs(["✏  Text input", "  PDF upload", "◧  Image / photo"])
+tab_t, tab_p, tab_i = st.tabs(["✏ Text input", "📄 PDF upload", "🖼 Image / photo"])
 patient_info_val = {"age":None,"conditions":[],"allergies":[]}
 
 with tab_t:
@@ -161,7 +178,7 @@ with tab_t:
                 st.session_state.sample_text=text
                 st.rerun()
 
-    st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
 
     prescription_text=st.text_area("prescription",value=st.session_state.sample_text,height=120,
         placeholder="e.g.  Warfarin 5mg once daily,  Aspirin 81mg OD,  Metformin 500mg BD")
@@ -175,7 +192,7 @@ with tab_t:
                           "conditions":[c.strip() for c in p_cond.splitlines() if c.strip()],
                           "allergies":[a.strip() for a in p_allerg.splitlines() if a.strip()]}
 
-    st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
     if st.button("Analyse prescription  →",type="primary",use_container_width=True,key="btn_t"):
         if not prescription_text.strip(): st.warning("Please enter a prescription.")
         else:
@@ -263,7 +280,7 @@ if st.session_state.report:
         st.markdown(f"""
         <div style="background:var(--white);border-top:1px solid var(--border);
                     border-bottom:1px solid var(--border);padding:18px 40px">
-          <div style="max-width:820px;margin:0 auto">
+          <div style="max-width:var(--report-w);margin:0 auto">
             <p style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
                       color:var(--ink3);margin-bottom:12px">Analysis pipeline — complete</p>
             <div style="display:flex;align-items:center">{steps_html}</div>
@@ -271,7 +288,7 @@ if st.session_state.report:
         </div>
         """, unsafe_allow_html=True)
 
-        st.markdown('<div style="max-width:820px;margin:0 auto;padding:28px 40px">', unsafe_allow_html=True)
+        st.markdown('<div style="max-width:var(--report-w);margin:0 auto;padding:28px 40px">', unsafe_allow_html=True)
 
         # ── Alert banner ──────────────────────────────────────────────────────
         has_issue=sev not in ("SAFE","LOW") or cis
@@ -421,7 +438,7 @@ if st.session_state.report:
 # ── Footer ─────────────────────────────────────────────────────────────────────
 st.markdown("""
 <div style="border-top:1px solid var(--border);background:var(--white);padding:16px 40px;margin-top:48px">
-  <div style="max-width:820px;margin:0 auto;display:flex;align-items:center;justify-content:space-between">
+  <div style="max-width:var(--report-w);margin:0 auto;display:flex;align-items:center;justify-content:space-between">
     <span style="font-family:'Instrument Serif',serif;font-size:16px;color:var(--ink)">RxCheck</span>
     <span style="font-size:12px;color:var(--ink3)">Free · local · open source · not medical advice</span>
   </div>
