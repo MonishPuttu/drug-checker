@@ -1,133 +1,82 @@
-import sys
-import os
+import sys, os, tempfile
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
-from typing import Optional
-import tempfile
-import json
+from typing import Optional, List
 
-from graph.builder import build_graph
+app = FastAPI(title="RxCheck API")
+app.add_middleware(CORSMiddleware, allow_origins=["*"],
+                   allow_methods=["*"], allow_headers=["*"])
 
-app = FastAPI(
-    title="Drug Interaction Checker API",
-    description="AI-powered drug interaction checker using LangGraph + Ollama",
-    version="1.0.0"
-)
+_graph = None
+def get_graph():
+    global _graph
+    if _graph is None:
+        from graph.builder import build_graph
+        _graph = build_graph()
+    return _graph
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+def base_state(raw_input, input_type, pi):
+    return {"raw_input": raw_input, "input_type": input_type,
+            "drugs": [], "patient_info": pi,
+            "interactions": [], "contraindications": [],
+            "web_findings": [], "severity_score": "SAFE",
+            "alternatives": [], "report": {}, "error": None,
+            "next": "ingestion", "parallel_checks_complete": False,
+            "alternatives_complete": False}
 
-graph = build_graph()
-
-
-class TextRequest(BaseModel):
+class TextReq(BaseModel):
     prescription_text: str
     patient_age: Optional[int] = None
-    patient_conditions: Optional[list] = []
-    patient_allergies: Optional[list] = []
-
-
-@app.get("/")
-def root():
-    return {"message": "Drug Interaction Checker API", "status": "running"}
-
+    patient_conditions: Optional[List[str]] = []
+    patient_allergies: Optional[List[str]] = []
 
 @app.get("/health")
-def health():
-    return {"status": "healthy"}
+def health(): return {"status": "ok"}
 
-
-@app.post("/check/text")
-def check_text(request: TextRequest):
-    """Check drug interactions from prescription text."""
+@app.post("/api/check/text")
+async def check_text(req: TextReq):
     try:
-        initial_state = {
-            "raw_input": request.prescription_text,
-            "input_type": "text",
-            "drugs": [],
-            "patient_info": {
-                "age": request.patient_age,
-                "conditions": request.patient_conditions or [],
-                "allergies": request.patient_allergies or [],
-            },
-            "interactions": [],
-            "contraindications": [],
-            "web_findings": [],
-            "severity_score": "SAFE",
-            "alternatives": [],
-            "report": {},
-            "error": None,
-            "next": "ingestion"
-        }
-        result = graph.invoke(initial_state)
-        return result.get("report", {"error": "No report generated"})
+        pi = {"age": req.patient_age,
+              "conditions": req.patient_conditions or [],
+              "allergies": req.patient_allergies or []}
+        r = get_graph().invoke(base_state(req.prescription_text, "text", pi))
+        return r.get("report") or {}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(500, str(e))
 
-
-@app.post("/check/pdf")
+@app.post("/api/check/pdf")
 async def check_pdf(file: UploadFile = File(...)):
-    """Check drug interactions from a prescription PDF."""
-    if not file.filename.endswith(".pdf"):
-        raise HTTPException(status_code=400, detail="Only PDF files accepted")
     try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-            content = await file.read()
-            tmp.write(content)
-            tmp_path = tmp.name
-
-        initial_state = {
-            "raw_input": tmp_path,
-            "input_type": "pdf",
-            "drugs": [], "patient_info": {},
-            "interactions": [], "contraindications": [],
-            "web_findings": [], "severity_score": "SAFE",
-            "alternatives": [], "report": {},
-            "error": None, "next": "ingestion"
-        }
-        result = graph.invoke(initial_state)
-        os.unlink(tmp_path)
-        return result.get("report", {"error": "No report generated"})
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as t:
+            t.write(await file.read()); path = t.name
+        r = get_graph().invoke(base_state(path, "pdf", {}))
+        try: os.unlink(path)
+        except: pass
+        return r.get("report") or {}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(500, str(e))
 
-
-@app.post("/check/image")
+@app.post("/api/check/image")
 async def check_image(file: UploadFile = File(...)):
-    """Check drug interactions from a prescription image."""
-    allowed = [".png", ".jpg", ".jpeg", ".tiff", ".bmp"]
-    ext = os.path.splitext(file.filename)[1].lower()
-    if ext not in allowed:
-        raise HTTPException(status_code=400, detail=f"Allowed formats: {allowed}")
     try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
-            content = await file.read()
-            tmp.write(content)
-            tmp_path = tmp.name
-
-        initial_state = {
-            "raw_input": tmp_path,
-            "input_type": "image",
-            "drugs": [], "patient_info": {},
-            "interactions": [], "contraindications": [],
-            "web_findings": [], "severity_score": "SAFE",
-            "alternatives": [], "report": {},
-            "error": None, "next": "ingestion"
-        }
-        result = graph.invoke(initial_state)
-        os.unlink(tmp_path)
-        return result.get("report", {"error": "No report generated"})
+        ext = os.path.splitext(file.filename)[1] or ".png"
+        with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as t:
+            t.write(await file.read()); path = t.name
+        r = get_graph().invoke(base_state(path, "image", {}))
+        try: os.unlink(path)
+        except: pass
+        return r.get("report") or {}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(500, str(e))
 
+static_dir = os.path.join(os.path.dirname(__file__), "../static")
+app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run("api.main:app", host="0.0.0.0", port=8000, reload=True)
