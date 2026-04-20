@@ -4,7 +4,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from typing import Optional, List
 
@@ -64,12 +63,16 @@ async def check_pdf(file: UploadFile = File(...)):
 @app.post("/api/check/image")
 async def check_image(file: UploadFile = File(...)):
     try:
-        ext = os.path.splitext(file.filename)[1] or ".png"
+        filename = file.filename or ""
+        ext = os.path.splitext(filename)[1] or ".png"
         with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as t:
-            t.write(await file.read()); path = t.name
+            t.write(await file.read())
+            path = t.name
         r = get_graph().invoke(base_state(path, "image", {}))
-        try: os.unlink(path)
-        except: pass
+        try:
+            os.unlink(path)
+        except Exception:
+            pass
         return r.get("report") or {}
     except Exception as e:
         raise HTTPException(500, str(e))

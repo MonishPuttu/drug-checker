@@ -10,7 +10,6 @@
       rel="stylesheet"
     />
     <style>
-      /* ── Reset ── */
       *,
       *::before,
       *::after {
@@ -57,7 +56,6 @@
         overflow: hidden;
       }
 
-      /* ── NAV ── */
       nav {
         position: fixed;
         top: 0;
@@ -122,7 +120,6 @@
         color: var(--ink);
       }
 
-      /* ── SCREENS ── */
       .screen {
         position: fixed;
         top: 56px;
@@ -136,15 +133,12 @@
         display: flex;
       }
 
-      /* ══════════════════════════════════════════
-   SCREEN A — Landing
-══════════════════════════════════════════ */
       #screen-landing {
         display: flex;
       }
 
       .landing-left {
-        width: 50%;
+        width: 47%;
         height: 100%;
         background: var(--white);
         border-right: 1px solid var(--border);
@@ -155,7 +149,7 @@
         overflow-y: auto;
       }
       .eyebrow {
-        font-size: 11px;
+        font-size: 14px;
         font-weight: 700;
         letter-spacing: 0.12em;
         text-transform: uppercase;
@@ -164,22 +158,22 @@
       }
       .headline {
         font-family: "Instrument Serif", serif;
-        font-size: 54px;
+        font-size: 76px;
         font-weight: 400;
-        line-height: 1.05;
+        line-height: 1.02;
         letter-spacing: -0.03em;
-        margin-bottom: 20px;
+        margin-bottom: 24px;
       }
       .headline em {
         font-style: italic;
         color: var(--ink2);
       }
       .subline {
-        font-size: 15px;
+        font-size: 19px;
         color: var(--ink2);
-        line-height: 1.7;
-        max-width: 420px;
-        margin-bottom: 44px;
+        line-height: 1.75;
+        max-width: 560px;
+        margin-bottom: 50px;
       }
       .features {
         display: flex;
@@ -207,9 +201,9 @@
         font-weight: 700;
       }
       .feat-text {
-        font-size: 14px;
+        font-size: 18px;
         color: var(--ink2);
-        line-height: 1.55;
+        line-height: 1.6;
       }
       .feat-text strong {
         color: var(--ink);
@@ -217,7 +211,7 @@
       }
 
       .landing-right {
-        width: 50%;
+        width: 53%;
         height: 100%;
         background: var(--cream);
         padding: 64px 72px 64px 56px;
@@ -227,7 +221,6 @@
         overflow-y: auto;
       }
 
-      /* ── Input label ── */
       .input-label {
         font-size: 11px;
         font-weight: 700;
@@ -237,7 +230,6 @@
         margin-bottom: 18px;
       }
 
-      /* ── Tab switcher ── */
       .tab-bar {
         display: inline-flex;
         gap: 2px;
@@ -274,7 +266,6 @@
         display: block;
       }
 
-      /* ── Example buttons ── */
       .ex-label {
         font-size: 11px;
         font-weight: 600;
@@ -310,7 +301,6 @@
         background: #fafaf8;
       }
 
-      /* ── Textarea ── */
       textarea.rx-input {
         width: 100%;
         min-height: 110px;
@@ -339,7 +329,6 @@
         box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
       }
 
-      /* ── File drop zone ── */
       .drop-zone {
         width: 100%;
         min-height: 100px;
@@ -376,7 +365,6 @@
         display: flex;
       }
 
-      /* ── Patient context collapsible ── */
       .patient-toggle {
         display: flex;
         align-items: center;
@@ -460,7 +448,6 @@
         border-color: var(--green-m);
       }
 
-      /* ── Primary CTA ── */
       .btn-primary {
         width: 100%;
         height: 48px;
@@ -492,7 +479,6 @@
         box-shadow: none;
       }
 
-      /* ── Tip box ── */
       .tip {
         background: var(--blue-b);
         border: 1px solid var(--blue-l);
@@ -504,9 +490,6 @@
         line-height: 1.6;
       }
 
-      /* ══════════════════════════════════════════
-   SCREEN B — Loading
-══════════════════════════════════════════ */
       #screen-loading {
         background: var(--white);
         flex-direction: column;
@@ -599,9 +582,6 @@
         }
       }
 
-      /* ══════════════════════════════════════════
-   SCREEN C — Results
-══════════════════════════════════════════ */
       #screen-results {
         gap: 0;
       }
@@ -623,7 +603,6 @@
         padding: 28px 24px;
       }
 
-      /* ── Pipeline bar ── */
       .pipeline-bar {
         display: flex;
         align-items: center;
@@ -665,7 +644,6 @@
         min-width: 6px;
       }
 
-      /* ── Banner ── */
       .banner {
         border-radius: var(--r);
         padding: 16px 20px;
@@ -700,7 +678,6 @@
         flex-shrink: 0;
       }
 
-      /* ── Pills / badges ── */
       .pill {
         display: inline-flex;
         align-items: center;
@@ -757,7 +734,6 @@
         color: var(--red);
       }
 
-      /* ── Drug chips ── */
       .chip {
         display: inline-flex;
         align-items: center;
@@ -779,7 +755,6 @@
         flex-shrink: 0;
       }
 
-      /* ── Section label ── */
       .sec-lbl {
         font-size: 10px;
         font-weight: 700;
@@ -789,7 +764,6 @@
         margin-bottom: 12px;
       }
 
-      /* ── Info card (summary / recs) ── */
       .info-card {
         border: 1px solid var(--border);
         border-radius: var(--r);
@@ -810,7 +784,6 @@
         margin-bottom: 6px;
       }
 
-      /* ── Two-col grid ── */
       .two-col {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -818,7 +791,6 @@
         margin-bottom: 20px;
       }
 
-      /* ── Interaction / contraindication card ── */
       .ix-card {
         background: var(--white);
         border: 1px solid var(--border);
@@ -855,7 +827,6 @@
         margin-top: 3px;
       }
 
-      /* ── Alt card ── */
       .alt-card {
         background: var(--white);
         border: 1px solid var(--border);
@@ -906,7 +877,6 @@
         margin-top: 4px;
       }
 
-      /* ── Empty state ── */
       .empty {
         background: var(--green-b);
         border: 1px solid var(--green-l);
@@ -917,7 +887,6 @@
         font-weight: 500;
       }
 
-      /* ── Literature expander ── */
       .lit-toggle {
         width: 100%;
         padding: 12px 16px;
@@ -975,7 +944,6 @@
         flex-wrap: wrap;
       }
 
-      /* ── Disclaimer ── */
       .disclaimer {
         margin-top: 32px;
         padding-top: 20px;
@@ -985,7 +953,6 @@
         line-height: 1.6;
       }
 
-      /* ── Side panel ── */
       .panel-card {
         background: var(--white);
         border: 1px solid var(--border);
@@ -1049,7 +1016,6 @@
     </style>
   </head>
   <body>
-    <!-- ── NAV ── -->
     <nav>
       <div class="nav-logo">
         <div class="nav-icon">⚕</div>
@@ -1063,9 +1029,6 @@
       </div>
     </nav>
 
-    <!-- ══════════════════════════════════════
-     SCREEN A — Landing
-══════════════════════════════════════ -->
     <div class="screen active" id="screen-landing">
       <div class="landing-left">
         <p class="eyebrow">Drug Safety Intelligence</p>
@@ -1118,7 +1081,6 @@
           <button class="tab-btn" onclick="switchTab('image')">◧ Image</button>
         </div>
 
-        <!-- TEXT TAB -->
         <div class="tab-panel active" id="tab-text">
           <p class="ex-label">Quick examples</p>
           <div class="ex-grid">
@@ -1208,7 +1170,6 @@
           </button>
         </div>
 
-        <!-- PDF TAB -->
         <div class="tab-panel" id="tab-pdf">
           <div
             class="drop-zone"
@@ -1240,7 +1201,6 @@
           </button>
         </div>
 
-        <!-- IMAGE TAB -->
         <div class="tab-panel" id="tab-image">
           <div class="tip">
             <strong>Tip</strong> — use a sharp, well-lit photo. Tesseract OCR
@@ -1279,9 +1239,6 @@
       </div>
     </div>
 
-    <!-- ══════════════════════════════════════
-     SCREEN B — Loading
-══════════════════════════════════════ -->
     <div class="screen" id="screen-loading">
       <div class="loader-wrap">
         <div class="loader-ring"></div>
@@ -1314,30 +1271,21 @@
       </div>
     </div>
 
-    <!-- ══════════════════════════════════════
-     SCREEN C — Results
-══════════════════════════════════════ -->
     <div class="screen" id="screen-results">
-      <div class="results-main" id="results-main">
-        <!-- Populated by JS -->
-      </div>
+      <div class="results-main" id="results-main"></div>
 
-      <div class="results-panel" id="results-panel">
-        <!-- Populated by JS -->
-      </div>
+      <div class="results-panel" id="results-panel"></div>
     </div>
 
     <script>
-      // ── State ─────────────────────────────────────────────────────────────────────
       let currentTab = "text";
       let pdfFile = null;
       let imgFile = null;
       let loaderTimer = null;
       let reportData = null;
 
-      const API = window.location.origin; // same origin
+      const API = window.location.origin;
 
-      // ── Tab switching ─────────────────────────────────────────────────────────────
       function switchTab(t) {
         currentTab = t;
         document.querySelectorAll(".tab-btn").forEach((b, i) => {
@@ -1351,13 +1299,11 @@
         });
       }
 
-      // ── Examples ──────────────────────────────────────────────────────────────────
       function setExample(text) {
         document.getElementById("rx-text").value = text;
         document.getElementById("rx-text").focus();
       }
 
-      // ── Patient toggle ────────────────────────────────────────────────────────────
       function togglePatient() {
         const toggle = document.getElementById("pt-toggle");
         const body = document.getElementById("pt-body");
@@ -1365,7 +1311,6 @@
         body.classList.toggle("open");
       }
 
-      // ── Drag & drop ───────────────────────────────────────────────────────────────
       function onDrag(e, id) {
         e.preventDefault();
         document.getElementById(id).classList.add("dragover");
@@ -1397,7 +1342,6 @@
         }
       }
 
-      // ── Screen transitions ────────────────────────────────────────────────────────
       function showScreen(id) {
         document
           .querySelectorAll(".screen")
@@ -1415,7 +1359,6 @@
         showScreen("screen-landing");
       }
 
-      // ── Loader animation ──────────────────────────────────────────────────────────
       function startLoader() {
         showScreen("screen-loading");
         const steps = [1, 2, 3, 4, 5];
@@ -1426,7 +1369,6 @@
         document.getElementById("ls-1").classList.add("active");
 
         let current = 1;
-        // Simulate step progression (each ~2s)
         loaderTimer = setInterval(() => {
           if (current <= 5) {
             document.getElementById(`ls-${current}`).classList.remove("active");
@@ -1445,7 +1387,6 @@
         }
       }
 
-      // ── API calls ─────────────────────────────────────────────────────────────────
       async function submitText() {
         const text = document.getElementById("rx-text").value.trim();
         if (!text) {
@@ -1514,7 +1455,6 @@
         }
       }
 
-      // ── Pill helpers ──────────────────────────────────────────────────────────────
       function sevPill(s) {
         const cls =
           {
@@ -1553,7 +1493,6 @@
         );
       }
 
-      // ── Render results ────────────────────────────────────────────────────────────
       function renderResults(r) {
         reportData = r;
         const sev = r.overall_severity || "SAFE";
@@ -1571,7 +1510,6 @@
 
         const hasIssue = !["SAFE", "LOW"].includes(sev) || cis.length > 0;
 
-        // ── Banner ────────────────────────────────────────────────────────────────
         let bannerBg = "#f0fdf4",
           bannerBd = "#dcfce7",
           bannerFg = "#166534",
@@ -1597,7 +1535,6 @@
           bannerSub = parts.join(" · ");
         }
 
-        // ── Interactions HTML ─────────────────────────────────────────────────────
         const ixHtml = ixs.length
           ? ixs
               .map(
@@ -1612,7 +1549,6 @@
               .join("")
           : '<div class="empty">✓ No interactions found</div>';
 
-        // ── Contraindications HTML ────────────────────────────────────────────────
         const ciHtml = cis.length
           ? cis
               .map(
@@ -1627,7 +1563,6 @@
               .join("")
           : '<div class="empty">✓ No contraindications found</div>';
 
-        // ── Alternatives HTML ─────────────────────────────────────────────────────
         const altHtml = alts
           .map(
             (alt) => `
@@ -1649,7 +1584,6 @@
           )
           .join("");
 
-        // ── Literature HTML ───────────────────────────────────────────────────────
         const litHtml = web.length
           ? `
     <button class="lit-toggle" onclick="toggleLit()">
@@ -1673,12 +1607,10 @@
     </div>`
           : "";
 
-        // ── Severity colour for stats ─────────────────────────────────────────────
         const sevColor =
           { HIGH: "#991b1b", CRITICAL: "#991b1b", MODERATE: "#92400e" }[sev] ||
           "#166534";
 
-        // ── Inject MAIN ───────────────────────────────────────────────────────────
         document.getElementById("results-main").innerHTML = `
     <div class="pipeline-bar">
       ${["Parsed", "Interactions", "Severity", "Report"]
@@ -1747,7 +1679,6 @@
     <p class="disclaimer">⚕ ${disc}</p>
   `;
 
-        // ── Inject PANEL ──────────────────────────────────────────────────────────
         document.getElementById("results-panel").innerHTML = `
     <div class="panel-card">
       <p class="panel-heading">Report</p>
@@ -1790,7 +1721,6 @@
         showScreen("screen-results");
       }
 
-      // ── Helpers ───────────────────────────────────────────────────────────────────
       function cap(s) {
         return s ? s.charAt(0).toUpperCase() + s.slice(1) : "";
       }
