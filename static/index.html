@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RxCheck — Drug Interaction Checker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital,wght@0,400;1,400&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ── Reset ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --cream:#f7f5f0; --white:#fff; --ink:#18181a; --ink2:#52525b; --ink3:#a1a1aa;
+  --border:#e4e4e7; --border2:#d4d4d8;
+  --green:#166534; --green-m:#16a34a; --green-l:#dcfce7; --green-b:#f0fdf4;
+  --red:#991b1b; --red-m:#dc2626; --red-l:#fee2e2; --red-b:#fff1f2;
+  --amber:#92400e; --amber-m:#d97706; --amber-l:#fde68a; --amber-b:#fffbeb;
+  --blue:#1e3a8a; --blue-l:#dbeafe; --blue-b:#eff6ff;
+  --r:12px; --rsm:8px; --rxs:6px;
+  --ss:0 1px 3px rgba(0,0,0,.06);
+  --sm:0 4px 12px rgba(0,0,0,.08);
+  --sl:0 8px 24px rgba(0,0,0,.10);
+}
+html,body{height:100%;font-family:'Geist',sans-serif;color:var(--ink);background:var(--cream);overflow:hidden;}
+
+/* ── NAV ── */
+nav{
+  position:fixed;top:0;left:0;right:0;height:56px;z-index:100;
+  background:var(--white);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;padding:0 48px;
+}
+.nav-logo{display:flex;align-items:center;gap:10px;}
+.nav-icon{
+  width:28px;height:28px;background:var(--ink);border-radius:7px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;color:#fff;flex-shrink:0;
+}
+.nav-wordmark{font-family:'Instrument Serif',serif;font-size:20px;letter-spacing:-.02em;}
+.nav-meta{font-size:12px;color:var(--ink3);}
+.nav-right{display:flex;align-items:center;gap:16px;}
+.btn-back{
+  display:none;height:34px;padding:0 16px;border-radius:var(--rxs);
+  border:1px solid var(--border);background:var(--white);
+  font-size:13px;font-weight:500;color:var(--ink2);cursor:pointer;
+  font-family:'Geist',sans-serif;transition:all .12s;
+}
+.btn-back:hover{border-color:var(--border2);color:var(--ink);}
+
+/* ── SCREENS ── */
+.screen{
+  position:fixed;top:56px;left:0;right:0;bottom:0;
+  display:none;
+  transition:opacity .25s ease;
+}
+.screen.active{display:flex;}
+
+/* ══════════════════════════════════════════
+   SCREEN A — Landing
+══════════════════════════════════════════ */
+#screen-landing{display:flex;}
+
+.landing-left{
+  width:50%;height:100%;
+  background:var(--white);border-right:1px solid var(--border);
+  padding:72px 56px 72px 72px;
+  display:flex;flex-direction:column;justify-content:center;
+  overflow-y:auto;
+}
+.eyebrow{
+  font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--ink3);margin-bottom:20px;
+}
+.headline{
+  font-family:'Instrument Serif',serif;font-size:54px;font-weight:400;
+  line-height:1.05;letter-spacing:-.03em;margin-bottom:20px;
+}
+.headline em{font-style:italic;color:var(--ink2);}
+.subline{
+  font-size:15px;color:var(--ink2);line-height:1.7;
+  max-width:420px;margin-bottom:44px;
+}
+.features{display:flex;flex-direction:column;gap:16px;}
+.feat{display:flex;align-items:flex-start;gap:12px;}
+.feat-dot{
+  width:20px;height:20px;border-radius:50%;
+  background:var(--green-b);border:1px solid var(--green-l);
+  flex-shrink:0;margin-top:1px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;color:var(--green);font-weight:700;
+}
+.feat-text{font-size:14px;color:var(--ink2);line-height:1.55;}
+.feat-text strong{color:var(--ink);font-weight:600;}
+
+.landing-right{
+  width:50%;height:100%;
+  background:var(--cream);
+  padding:64px 72px 64px 56px;
+  display:flex;flex-direction:column;justify-content:center;
+  overflow-y:auto;
+}
+
+/* ── Input label ── */
+.input-label{
+  font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink3);margin-bottom:18px;
+}
+
+/* ── Tab switcher ── */
+.tab-bar{
+  display:inline-flex;gap:2px;
+  background:#eeede9;border:1px solid var(--border2);
+  border-radius:var(--rsm);padding:3px;margin-bottom:20px;
+}
+.tab-btn{
+  height:30px;padding:0 18px;border-radius:var(--rxs);border:none;
+  background:transparent;font-size:13px;font-weight:500;color:var(--ink2);
+  cursor:pointer;font-family:'Geist',sans-serif;transition:all .12s;white-space:nowrap;
+}
+.tab-btn.active{
+  background:var(--white);color:var(--ink);font-weight:600;
+  box-shadow:var(--ss);
+}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+
+/* ── Example buttons ── */
+.ex-label{
+  font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--ink3);margin-bottom:8px;
+}
+.ex-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px;}
+.ex-btn{
+  height:34px;border-radius:var(--rxs);border:1px solid var(--border);
+  background:var(--white);font-size:12px;font-weight:500;color:var(--ink2);
+  cursor:pointer;font-family:'Geist',sans-serif;
+  transition:all .12s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.ex-btn:hover{border-color:var(--border2);color:var(--ink);background:#fafaf8;}
+
+/* ── Textarea ── */
+textarea.rx-input{
+  width:100%;min-height:110px;resize:none;
+  border:1.5px solid var(--border);border-radius:var(--rsm);
+  padding:14px 16px;font-size:15px;line-height:1.7;
+  font-family:'Geist',sans-serif;color:var(--ink);background:var(--white);
+  box-shadow:var(--ss);transition:border-color .15s,box-shadow .15s;
+  outline:none;margin-bottom:10px;display:block;
+}
+textarea.rx-input::placeholder{color:var(--ink3);}
+textarea.rx-input:focus{
+  border-color:var(--green-m);
+  box-shadow:0 0 0 3px rgba(22,163,74,.12);
+}
+
+/* ── File drop zone ── */
+.drop-zone{
+  width:100%;min-height:100px;border:1.5px dashed var(--border2);
+  border-radius:var(--r);padding:24px;text-align:center;
+  background:var(--white);cursor:pointer;transition:border-color .15s;
+  margin-bottom:10px;
+}
+.drop-zone:hover,.drop-zone.dragover{border-color:var(--green-m);}
+.drop-zone-text{font-size:13px;color:var(--ink3);}
+.drop-zone-text strong{color:var(--ink2);}
+.file-preview{
+  margin-top:8px;font-size:12px;color:var(--green);font-weight:500;
+  display:none;align-items:center;gap:6px;
+}
+.file-preview.show{display:flex;}
+
+/* ── Patient context collapsible ── */
+.patient-toggle{
+  display:flex;align-items:center;gap:8px;
+  font-size:13px;color:var(--ink2);cursor:pointer;
+  padding:10px 14px;border:1px solid var(--border);border-radius:var(--rsm);
+  background:var(--white);box-shadow:var(--ss);margin-bottom:10px;
+  font-family:'Geist',sans-serif;user-select:none;transition:all .12s;
+}
+.patient-toggle:hover{border-color:var(--border2);color:var(--ink);}
+.patient-toggle .chevron{margin-left:auto;transition:transform .2s;font-size:11px;}
+.patient-toggle.open .chevron{transform:rotate(180deg);}
+.patient-body{
+  display:none;border:1px solid var(--border);border-radius:var(--rsm);
+  padding:16px;background:var(--white);box-shadow:var(--ss);margin-bottom:10px;
+  animation:slideDown .15s ease;
+}
+.patient-body.open{display:block;}
+@keyframes slideDown{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.patient-grid{display:grid;grid-template-columns:80px 1fr 1fr;gap:10px;}
+.field-label{font-size:11px;font-weight:600;color:var(--ink3);letter-spacing:.04em;margin-bottom:4px;}
+input.rx-field,textarea.rx-field{
+  width:100%;border:1.5px solid var(--border);border-radius:var(--rsm);
+  padding:8px 10px;font-size:13px;font-family:'Geist',sans-serif;
+  color:var(--ink);background:var(--white);outline:none;resize:none;
+  transition:border-color .15s;
+}
+input.rx-field:focus,textarea.rx-field:focus{border-color:var(--green-m);}
+
+/* ── Primary CTA ── */
+.btn-primary{
+  width:100%;height:48px;border-radius:var(--rsm);border:none;
+  background:var(--ink);color:#fff;
+  font-size:15px;font-weight:600;letter-spacing:-.01em;
+  font-family:'Geist',sans-serif;cursor:pointer;
+  box-shadow:var(--sm);transition:all .15s;margin-top:4px;
+}
+.btn-primary:hover{background:#27272a;transform:translateY(-1px);box-shadow:var(--sl);}
+.btn-primary:active{transform:translateY(0);}
+.btn-primary:disabled{background:var(--border2);cursor:not-allowed;transform:none;box-shadow:none;}
+
+/* ── Tip box ── */
+.tip{
+  background:var(--blue-b);border:1px solid var(--blue-l);
+  border-radius:var(--rsm);padding:10px 14px;
+  font-size:13px;color:var(--blue);margin-bottom:12px;line-height:1.6;
+}
+
+/* ══════════════════════════════════════════
+   SCREEN B — Loading
+══════════════════════════════════════════ */
+#screen-loading{
+  background:var(--white);
+  flex-direction:column;align-items:center;justify-content:center;gap:0;
+}
+.loader-wrap{text-align:center;max-width:480px;}
+.loader-ring{
+  width:48px;height:48px;border:3px solid var(--border);
+  border-top-color:var(--ink);border-radius:50%;
+  animation:spin 0.8s linear infinite;margin:0 auto 28px;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loader-title{
+  font-family:'Instrument Serif',serif;font-size:28px;
+  font-weight:400;color:var(--ink);margin-bottom:10px;letter-spacing:-.02em;
+}
+.loader-steps{display:flex;flex-direction:column;gap:10px;margin-top:28px;text-align:left;}
+.loader-step{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 16px;border-radius:var(--rsm);
+  border:1px solid var(--border);background:var(--white);
+  font-size:13px;color:var(--ink3);transition:all .3s;
+}
+.loader-step.done{border-color:var(--green-l);background:var(--green-b);color:var(--green);}
+.loader-step.active{border-color:var(--border2);color:var(--ink);background:#fafaf8;}
+.step-icon{width:16px;height:16px;border-radius:50%;background:var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;}
+.loader-step.done .step-icon{background:var(--green);color:white;}
+.loader-step.active .step-icon{background:var(--ink);color:white;animation:pulse 1s ease infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+
+/* ══════════════════════════════════════════
+   SCREEN C — Results
+══════════════════════════════════════════ */
+#screen-results{gap:0;}
+
+.results-main{
+  flex:1;height:100%;overflow-y:auto;
+  background:var(--white);border-right:1px solid var(--border);
+  padding:44px 52px;
+}
+.results-panel{
+  width:340px;flex-shrink:0;height:100%;overflow-y:auto;
+  background:var(--cream);padding:28px 24px;
+}
+
+/* ── Pipeline bar ── */
+.pipeline-bar{
+  display:flex;align-items:center;margin-bottom:32px;
+}
+.pip-step{display:flex;align-items:center;flex:1;min-width:0;}
+.pip-dot{
+  width:22px;height:22px;border-radius:50%;background:var(--ink);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.pip-num{color:#fff;font-size:10px;font-weight:700;}
+.pip-lbl{font-size:11px;font-weight:600;color:var(--ink);margin-left:7px;white-space:nowrap;}
+.pip-line{flex:1;height:1px;background:var(--border);margin:0 10px;min-width:6px;}
+
+/* ── Banner ── */
+.banner{
+  border-radius:var(--r);padding:16px 20px;margin-bottom:24px;
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+}
+.banner-left{display:flex;align-items:center;gap:14px;}
+.banner-icon{font-size:20px;flex-shrink:0;}
+.banner-title{font-size:14px;font-weight:600;margin-bottom:2px;}
+.banner-sub{font-size:13px;opacity:.75;}
+.banner-pills{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+
+/* ── Pills / badges ── */
+.pill{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:3px 10px;border-radius:999px;
+  font-size:11px;font-weight:700;letter-spacing:.06em;white-space:nowrap;
+}
+.pill-safe{background:var(--green-l);color:var(--green);}
+.pill-low{background:var(--amber-l);color:var(--amber);}
+.pill-moderate{background:var(--amber-b);color:var(--amber);}
+.pill-high{background:var(--red-l);color:var(--red);}
+.pill-critical,.pill-contraindicated{background:var(--red-l);color:var(--red);}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.06em;white-space:nowrap;}
+.badge-routine{background:var(--green-l);color:var(--green);}
+.badge-urgent{background:var(--amber-l);color:var(--amber);}
+.badge-emergency{background:var(--red-l);color:var(--red);}
+
+/* ── Drug chips ── */
+.chip{
+  display:inline-flex;align-items:center;gap:5px;
+  background:var(--white);color:var(--ink2);border:1px solid var(--border);
+  padding:4px 12px;border-radius:999px;
+  font-size:12px;font-weight:500;margin:2px;
+}
+.chip-dot{width:6px;height:6px;border-radius:50%;background:var(--ink3);flex-shrink:0;}
+
+/* ── Section label ── */
+.sec-lbl{
+  font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink3);margin-bottom:12px;
+}
+
+/* ── Info card (summary / recs) ── */
+.info-card{
+  border:1px solid var(--border);border-radius:var(--r);
+  padding:18px 22px;margin-bottom:20px;
+}
+.info-card p{font-size:14px;line-height:1.75;}
+.info-card ul{margin:0;padding-left:18px;}
+.info-card li{font-size:14px;line-height:1.55;margin-bottom:6px;}
+
+/* ── Two-col grid ── */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
+
+/* ── Interaction / contraindication card ── */
+.ix-card{
+  background:var(--white);border:1px solid var(--border);
+  border-radius:var(--r);padding:14px 16px;margin-bottom:10px;
+  box-shadow:var(--ss);
+}
+.ix-header{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
+.ix-drugs{font-size:13px;font-weight:600;color:var(--ink);}
+.ix-desc{font-size:13px;color:var(--ink2);line-height:1.55;margin-bottom:6px;}
+.ix-rec{font-size:12px;color:var(--ink3);}
+.ix-src{font-size:11px;color:var(--border2);margin-top:3px;}
+
+/* ── Alt card ── */
+.alt-card{background:var(--white);border:1px solid var(--border);border-left:3px solid var(--green-m);border-radius:var(--r);padding:14px 16px;margin-bottom:10px;box-shadow:var(--ss);}
+.alt-drug{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:3px;}
+.alt-reason{font-size:12px;color:var(--ink2);margin-bottom:8px;}
+.alt-item{background:#f9fafb;border:1px solid var(--border);border-radius:var(--rsm);padding:10px 14px;margin-top:8px;}
+.alt-name{font-size:13px;font-weight:600;color:var(--green);}
+.alt-class{font-size:11px;color:var(--ink3);font-weight:400;margin-left:4px;}
+.alt-rat{font-size:13px;color:var(--ink2);line-height:1.5;margin-top:3px;}
+.alt-notes{font-size:11px;color:var(--ink3);margin-top:4px;}
+
+/* ── Empty state ── */
+.empty{
+  background:var(--green-b);border:1px solid var(--green-l);border-radius:var(--r);
+  padding:14px 16px;font-size:14px;color:var(--green);font-weight:500;
+}
+
+/* ── Literature expander ── */
+.lit-toggle{
+  width:100%;padding:12px 16px;border:1px solid var(--border);border-radius:var(--rsm);
+  background:var(--white);text-align:left;font-size:13px;font-weight:500;
+  color:var(--ink2);cursor:pointer;font-family:'Geist',sans-serif;
+  display:flex;align-items:center;justify-content:space-between;
+  box-shadow:var(--ss);margin-bottom:8px;transition:all .12s;
+}
+.lit-toggle:hover{color:var(--ink);border-color:var(--border2);}
+.lit-body{display:none;border:1px solid var(--border);border-radius:var(--rsm);padding:4px 0;background:var(--white);box-shadow:var(--ss);margin-bottom:16px;}
+.lit-body.open{display:block;}
+.lit-item{padding:12px 16px;border-bottom:1px solid var(--border);}
+.lit-item:last-child{border-bottom:none;}
+.lit-finding{font-size:14px;font-weight:500;color:var(--ink);margin-bottom:5px;}
+.lit-meta{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--ink3);flex-wrap:wrap;}
+
+/* ── Disclaimer ── */
+.disclaimer{margin-top:32px;padding-top:20px;border-top:1px solid var(--border);font-size:12px;color:var(--ink3);line-height:1.6;}
+
+/* ── Side panel ── */
+.panel-card{background:var(--white);border:1px solid var(--border);border-radius:var(--rsm);padding:16px;margin-bottom:12px;box-shadow:var(--ss);}
+.panel-heading{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);padding-bottom:10px;border-bottom:1px solid var(--border);margin-bottom:12px;}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.stat-box{background:var(--cream);border-radius:8px;padding:14px;text-align:center;}
+.stat-label{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);margin-bottom:6px;}
+.stat-num{font-family:'Instrument Serif',serif;font-size:32px;line-height:1;}
+.btn-dl{
+  width:100%;height:36px;border-radius:var(--rxs);
+  border:1px solid var(--border);background:var(--white);
+  font-size:13px;font-weight:500;color:var(--ink2);cursor:pointer;
+  font-family:'Geist',sans-serif;box-shadow:var(--ss);transition:all .12s;
+}
+.btn-dl:hover{color:var(--ink);border-color:var(--border2);}
+</style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav>
+  <div class="nav-logo">
+    <div class="nav-icon">⚕</div>
+    <span class="nav-wordmark">RxCheck</span>
+  </div>
+  <div class="nav-right">
+    <button class="btn-back" id="btn-back" onclick="goHome()">← New check</button>
+    <span class="nav-meta">Free · local · open source · LangGraph + Ollama</span>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════
+     SCREEN A — Landing
+══════════════════════════════════════ -->
+<div class="screen active" id="screen-landing">
+
+  <div class="landing-left">
+    <p class="eyebrow">Drug Safety Intelligence</p>
+    <h1 class="headline">
+      Check before<br>it's dispensed.<br>
+      <em>Every time.</em>
+    </h1>
+    <p class="subline">
+      Paste a prescription, upload a PDF, or photograph a label.
+      The multi-agent pipeline checks interactions,
+      contraindications, and suggests safer alternatives — locally, for free.
+    </p>
+    <div class="features">
+      <div class="feat"><div class="feat-dot">✓</div>
+        <p class="feat-text"><strong>Interaction detection</strong> — RxNorm · OpenFDA · LLM synthesis</p></div>
+      <div class="feat"><div class="feat-dot">✓</div>
+        <p class="feat-text"><strong>Contraindication check</strong> — patient profile aware</p></div>
+      <div class="feat"><div class="feat-dot">✓</div>
+        <p class="feat-text"><strong>Safer alternatives</strong> — same class, lower risk</p></div>
+      <div class="feat"><div class="feat-dot">✓</div>
+        <p class="feat-text"><strong>100 % local</strong> — Ollama, no data leaves your machine</p></div>
+    </div>
+  </div>
+
+  <div class="landing-right">
+    <p class="input-label">Enter prescription</p>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('text')">✏ Text</button>
+      <button class="tab-btn" onclick="switchTab('pdf')"> PDF</button>
+      <button class="tab-btn" onclick="switchTab('image')">◧ Image</button>
+    </div>
+
+    <!-- TEXT TAB -->
+    <div class="tab-panel active" id="tab-text">
+      <p class="ex-label">Quick examples</p>
+      <div class="ex-grid">
+        <button class="ex-btn" onclick="setExample('Warfarin 5mg OD, Aspirin 81mg OD, Omeprazole 20mg OD')">Warfarin + Aspirin</button>
+        <button class="ex-btn" onclick="setExample('Sertraline 50mg OD, Tramadol 50mg TID PRN')">Serotonin risk</button>
+        <button class="ex-btn" onclick="setExample('Warfarin 5mg, Aspirin 81mg, Ibuprofen 400mg TID, Fluoxetine 20mg OD')">Polypharmacy</button>
+        <button class="ex-btn" onclick="setExample('Amlodipine 5mg OD, Atorvastatin 40mg OD, Ramipril 5mg OD')">Safe combo</button>
+      </div>
+      <textarea id="rx-text" class="rx-input"
+        placeholder="e.g. Warfarin 5mg once daily, Aspirin 81mg OD, Metformin 500mg BD"></textarea>
+
+      <div class="patient-toggle" id="pt-toggle" onclick="togglePatient()">
+        <span>＋ Patient context (age · conditions · allergies)</span>
+        <span class="chevron">▾</span>
+      </div>
+      <div class="patient-body" id="pt-body">
+        <div class="patient-grid">
+          <div>
+            <p class="field-label">Age</p>
+            <input type="number" id="pt-age" class="rx-field" min="0" max="120" placeholder="—">
+          </div>
+          <div>
+            <p class="field-label">Conditions</p>
+            <textarea id="pt-cond" class="rx-field" rows="3" placeholder="Type 2 diabetes&#10;Hypertension"></textarea>
+          </div>
+          <div>
+            <p class="field-label">Allergies</p>
+            <textarea id="pt-allerg" class="rx-field" rows="3" placeholder="Penicillin&#10;Sulfa drugs"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-primary" onclick="submitText()">Analyse prescription →</button>
+    </div>
+
+    <!-- PDF TAB -->
+    <div class="tab-panel" id="tab-pdf">
+      <div class="drop-zone" id="pdf-zone"
+           onclick="document.getElementById('pdf-file').click()"
+           ondragover="onDrag(event,'pdf-zone')"
+           ondragleave="offDrag('pdf-zone')"
+           ondrop="onDrop(event,'pdf')">
+        <p class="drop-zone-text"><strong>Click to choose</strong> or drag & drop a PDF</p>
+        <p class="drop-zone-text" style="margin-top:4px;font-size:12px">Prescription PDF · any size</p>
+        <div class="file-preview" id="pdf-preview">
+          <span>📄</span><span id="pdf-name"></span>
+        </div>
+      </div>
+      <input type="file" id="pdf-file" accept=".pdf" style="display:none" onchange="onFileSelect(event,'pdf')">
+      <button class="btn-primary" onclick="submitFile('pdf')">Analyse PDF →</button>
+    </div>
+
+    <!-- IMAGE TAB -->
+    <div class="tab-panel" id="tab-image">
+      <div class="tip"><strong>Tip</strong> — use a sharp, well-lit photo. Tesseract OCR runs first; then <code>llama3.2-vision</code> / <code>llava</code> is tried automatically.</div>
+      <div class="drop-zone" id="img-zone"
+           onclick="document.getElementById('img-file').click()"
+           ondragover="onDrag(event,'img-zone')"
+           ondragleave="offDrag('img-zone')"
+           ondrop="onDrop(event,'image')">
+        <p class="drop-zone-text"><strong>Click to choose</strong> or drag & drop an image</p>
+        <p class="drop-zone-text" style="margin-top:4px;font-size:12px">PNG · JPG · TIFF</p>
+        <div class="file-preview" id="img-preview">
+          <span>🖼</span><span id="img-name"></span>
+        </div>
+      </div>
+      <input type="file" id="img-file" accept="image/*" style="display:none" onchange="onFileSelect(event,'image')">
+      <button class="btn-primary" onclick="submitFile('image')">Analyse image →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN B — Loading
+══════════════════════════════════════ -->
+<div class="screen" id="screen-loading">
+  <div class="loader-wrap">
+    <div class="loader-ring"></div>
+    <h2 class="loader-title">Analysing prescription…</h2>
+    <p style="font-size:14px;color:var(--ink3)">The multi-agent pipeline is running</p>
+    <div class="loader-steps">
+      <div class="loader-step active" id="ls-1">
+        <div class="step-icon">1</div>
+        <span>Parsing prescription text</span>
+      </div>
+      <div class="loader-step" id="ls-2">
+        <div class="step-icon">2</div>
+        <span>Checking drug interactions (RxNorm · OpenFDA)</span>
+      </div>
+      <div class="loader-step" id="ls-3">
+        <div class="step-icon">3</div>
+        <span>Evaluating contraindications</span>
+      </div>
+      <div class="loader-step" id="ls-4">
+        <div class="step-icon">4</div>
+        <span>Searching literature (PubMed · FAERS)</span>
+      </div>
+      <div class="loader-step" id="ls-5">
+        <div class="step-icon">5</div>
+        <span>Generating report &amp; alternatives</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN C — Results
+══════════════════════════════════════ -->
+<div class="screen" id="screen-results">
+
+  <div class="results-main" id="results-main">
+    <!-- Populated by JS -->
+  </div>
+
+  <div class="results-panel" id="results-panel">
+    <!-- Populated by JS -->
+  </div>
+
+</div>
+
+<script>
+// ── State ─────────────────────────────────────────────────────────────────────
+let currentTab = 'text';
+let pdfFile = null;
+let imgFile = null;
+let loaderTimer = null;
+let reportData = null;
+
+const API = window.location.origin;  // same origin
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+function switchTab(t) {
+  currentTab = t;
+  document.querySelectorAll('.tab-btn').forEach((b,i) => {
+    b.classList.toggle('active', ['text','pdf','image'][i] === t);
+  });
+  document.querySelectorAll('.tab-panel').forEach((p,i) => {
+    p.classList.toggle('active', ['tab-text','tab-pdf','tab-image'][i] === `tab-${t}`);
+  });
+}
+
+// ── Examples ──────────────────────────────────────────────────────────────────
+function setExample(text) {
+  document.getElementById('rx-text').value = text;
+  document.getElementById('rx-text').focus();
+}
+
+// ── Patient toggle ────────────────────────────────────────────────────────────
+function togglePatient() {
+  const toggle = document.getElementById('pt-toggle');
+  const body = document.getElementById('pt-body');
+  toggle.classList.toggle('open');
+  body.classList.toggle('open');
+}
+
+// ── Drag & drop ───────────────────────────────────────────────────────────────
+function onDrag(e, id) { e.preventDefault(); document.getElementById(id).classList.add('dragover'); }
+function offDrag(id) { document.getElementById(id).classList.remove('dragover'); }
+function onDrop(e, type) {
+  e.preventDefault();
+  const id = type === 'pdf' ? 'pdf-zone' : 'img-zone';
+  offDrag(id);
+  const file = e.dataTransfer.files[0];
+  if (!file) return;
+  handleFile(file, type);
+}
+function onFileSelect(e, type) {
+  const file = e.target.files[0];
+  if (file) handleFile(file, type);
+}
+function handleFile(file, type) {
+  if (type === 'pdf') {
+    pdfFile = file;
+    document.getElementById('pdf-name').textContent = file.name;
+    document.getElementById('pdf-preview').classList.add('show');
+  } else {
+    imgFile = file;
+    document.getElementById('img-name').textContent = file.name;
+    document.getElementById('img-preview').classList.add('show');
+  }
+}
+
+// ── Screen transitions ────────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const isResults = id === 'screen-results';
+  document.getElementById('btn-back').style.display = isResults ? 'block' : 'none';
+}
+
+function goHome() {
+  clearLoader();
+  reportData = null;
+  showScreen('screen-landing');
+}
+
+// ── Loader animation ──────────────────────────────────────────────────────────
+function startLoader() {
+  showScreen('screen-loading');
+  const steps = [1,2,3,4,5];
+  steps.forEach(i => {
+    const el = document.getElementById(`ls-${i}`);
+    el.classList.remove('done','active');
+  });
+  document.getElementById('ls-1').classList.add('active');
+
+  let current = 1;
+  // Simulate step progression (each ~2s)
+  loaderTimer = setInterval(() => {
+    if (current <= 5) {
+      document.getElementById(`ls-${current}`).classList.remove('active');
+      document.getElementById(`ls-${current}`).classList.add('done');
+      current++;
+      if (current <= 5) document.getElementById(`ls-${current}`).classList.add('active');
+    }
+  }, 2200);
+}
+
+function clearLoader() {
+  if (loaderTimer) { clearInterval(loaderTimer); loaderTimer = null; }
+}
+
+// ── API calls ─────────────────────────────────────────────────────────────────
+async function submitText() {
+  const text = document.getElementById('rx-text').value.trim();
+  if (!text) { alert('Please enter a prescription.'); return; }
+
+  const age   = parseInt(document.getElementById('pt-age').value) || null;
+  const cond  = document.getElementById('pt-cond').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  const allrg = document.getElementById('pt-allerg').value.split('\n').map(s=>s.trim()).filter(Boolean);
+
+  startLoader();
+  try {
+    const res = await fetch(`${API}/api/check/text`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        prescription_text: text,
+        patient_age: age,
+        patient_conditions: cond,
+        patient_allergies: allrg
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'API error');
+    clearLoader();
+    renderResults(data);
+  } catch(e) {
+    clearLoader();
+    showScreen('screen-landing');
+    alert(`Error: ${e.message}`);
+  }
+}
+
+async function submitFile(type) {
+  const file = type === 'pdf' ? pdfFile : imgFile;
+  if (!file) { alert(`Please select a ${type} file.`); return; }
+
+  startLoader();
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const res = await fetch(`${API}/api/check/${type}`, { method:'POST', body:fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'API error');
+    clearLoader();
+    renderResults(data);
+  } catch(e) {
+    clearLoader();
+    showScreen('screen-landing');
+    alert(`Error: ${e.message}`);
+  }
+}
+
+// ── Pill helpers ──────────────────────────────────────────────────────────────
+function sevPill(s) {
+  const cls = {SAFE:'safe',LOW:'low',MODERATE:'moderate',HIGH:'high',
+               CRITICAL:'critical',CONTRAINDICATED:'contraindicated'}[(s||'SAFE').toUpperCase()] || 'low';
+  return `<span class="pill pill-${cls}">● ${(s||'SAFE').toUpperCase()}</span>`;
+}
+function urgBadge(u) {
+  const cfg = {EMERGENCY:['badge-emergency','⚠'],URGENT:['badge-urgent','!'],ROUTINE:['badge-routine','✓']};
+  const [cls,icon] = cfg[(u||'ROUTINE').toUpperCase()] || ['badge-routine','✓'];
+  return `<span class="badge ${cls}">${icon} ${(u||'ROUTINE').toUpperCase()}</span>`;
+}
+function chip(name) {
+  return `<span class="chip"><span class="chip-dot"></span>${name.charAt(0).toUpperCase()+name.slice(1)}</span>`;
+}
+function lc(s) {
+  return {HIGH:'#dc2626',CRITICAL:'#dc2626',CONTRAINDICATED:'#dc2626',MODERATE:'#d97706'}[(s||'').toUpperCase()] || '#d4d4d8';
+}
+
+// ── Render results ────────────────────────────────────────────────────────────
+function renderResults(r) {
+  reportData = r;
+  const sev    = r.overall_severity || 'SAFE';
+  const urg    = r.urgency || 'ROUTINE';
+  const drugs  = r.drugs_analyzed || [];
+  const ixs    = r.interactions || [];
+  const cis    = r.contraindications || [];
+  const alts   = r.alternatives || [];
+  const web    = r.web_findings || [];
+  const summ   = r.clinical_summary || '';
+  const recs   = r.key_recommendations || [];
+  const repId  = r.report_id || '';
+  const genAt  = (r.generated_at||'').slice(0,19).replace('T',' ');
+  const disc   = r.disclaimer || '';
+
+  const hasIssue = !['SAFE','LOW'].includes(sev) || cis.length > 0;
+
+  // ── Banner ────────────────────────────────────────────────────────────────
+  let bannerBg='#f0fdf4',bannerBd='#dcfce7',bannerFg='#166534',bannerIcon='✓',bannerTitle='No significant interactions detected',bannerSub='';
+  if (hasIssue) {
+    const bc = {MODERATE:['#fffbeb','#fde68a','#92400e'],HIGH:['#fff1f2','#fee2e2','#991b1b'],CRITICAL:['#fff1f2','#fee2e2','#991b1b']};
+    [bannerBg,bannerBd,bannerFg] = bc[sev] || bc.MODERATE;
+    bannerIcon='⚠'; bannerTitle=`${sev} severity detected`;
+    const parts=[];
+    if(ixs.length) parts.push(`${ixs.length} interaction${ixs.length>1?'s':''}`);
+    if(cis.length) parts.push(`${cis.length} contraindication${cis.length>1?'s':''}`);
+    bannerSub=parts.join(' · ');
+  }
+
+  // ── Interactions HTML ─────────────────────────────────────────────────────
+  const ixHtml = ixs.length ? ixs.map(ix=>`
+    <div class="ix-card" style="border-left:3px solid ${lc(ix.severity||'LOW')}">
+      <div class="ix-header">${sevPill(ix.severity)}<span class="ix-drugs">${cap(ix.drug1)} ↔ ${cap(ix.drug2)}</span></div>
+      <p class="ix-desc">${ix.description||''}</p>
+      <p class="ix-rec">→ ${ix.recommendation||''}</p>
+      <p class="ix-src">${ix.source||''}</p>
+    </div>`).join('')
+    : '<div class="empty">✓ No interactions found</div>';
+
+  // ── Contraindications HTML ────────────────────────────────────────────────
+  const ciHtml = cis.length ? cis.map(ci=>`
+    <div class="ix-card" style="border-left:3px solid ${lc(ci.severity||'HIGH')}">
+      <div class="ix-header">${sevPill(ci.severity)}<span class="ix-drugs">${cap(ci.drug)}</span></div>
+      <p class="ix-rec" style="color:var(--ink2);font-weight:600;margin-bottom:5px">${ci.condition||''}</p>
+      <p class="ix-desc">${ci.description||''}</p>
+      <p class="ix-rec">→ ${ci.recommendation||''}</p>
+    </div>`).join('')
+    : '<div class="empty">✓ No contraindications found</div>';
+
+  // ── Alternatives HTML ─────────────────────────────────────────────────────
+  const altHtml = alts.map(alt=>`
+    <div class="alt-card">
+      <p class="alt-drug">${cap(alt.original_drug||'')}</p>
+      <p class="alt-reason">${alt.reason_for_change||''}</p>
+      ${(alt.alternatives||[]).map(a=>`
+        <div class="alt-item">
+          <span class="alt-name">→ ${cap(a.name||'')}</span>
+          <span class="alt-class">· ${a.class||''}</span>
+          <p class="alt-rat">${a.rationale||''}</p>
+          <p class="alt-notes">${a.notes||''}</p>
+        </div>`).join('')}
+    </div>`).join('');
+
+  // ── Literature HTML ───────────────────────────────────────────────────────
+  const litHtml = web.length ? `
+    <button class="lit-toggle" onclick="toggleLit()">
+      <span>Literature & adverse event findings (${web.length})</span>
+      <span id="lit-chevron">▾</span>
+    </button>
+    <div class="lit-body" id="lit-body">
+      ${web.map(wf=>`
+        <div class="lit-item">
+          <p class="lit-finding">${wf.finding||''}</p>
+          <div class="lit-meta">
+            <span>${(wf.drugs_involved||[]).join(', ')}</span>
+            <span>·</span>${sevPill(wf.clinical_significance)}
+            <span>·</span><span>${wf.source||''}</span>
+          </div>
+        </div>`).join('')}
+    </div>` : '';
+
+  // ── Severity colour for stats ─────────────────────────────────────────────
+  const sevColor = {HIGH:'#991b1b',CRITICAL:'#991b1b',MODERATE:'#92400e'}[sev] || '#166534';
+
+  // ── Inject MAIN ───────────────────────────────────────────────────────────
+  document.getElementById('results-main').innerHTML = `
+    <div class="pipeline-bar">
+      ${['Parsed','Interactions','Severity','Report'].map((l,i,a)=>`
+        <div class="pip-step">
+          <div class="pip-dot"><span class="pip-num">${i+1}</span></div>
+          <span class="pip-lbl">${l}</span>
+          ${i<a.length-1?'<div class="pip-line"></div>':''}
+        </div>`).join('')}
+    </div>
+
+    <div class="banner" style="background:${bannerBg};border:1px solid ${bannerBd}">
+      <div class="banner-left">
+        <span class="banner-icon" style="color:${bannerFg}">${bannerIcon}</span>
+        <div>
+          <p class="banner-title" style="color:${bannerFg}">${bannerTitle}</p>
+          ${bannerSub?`<p class="banner-sub" style="color:${bannerFg}">${bannerSub}</p>`:''}
+        </div>
+      </div>
+      <div class="banner-pills">${sevPill(sev)}${urgBadge(urg)}</div>
+    </div>
+
+    ${summ?`<p class="sec-lbl">Clinical Summary</p>
+    <div class="info-card" style="background:var(--blue-b);border-color:var(--blue-l);border-left:3px solid var(--blue);margin-bottom:20px">
+      <p style="color:var(--blue)">${summ}</p>
+    </div>`:''}
+
+    ${recs.length?`<p class="sec-lbl">Key Recommendations</p>
+    <div class="info-card" style="background:var(--green-b);border-color:var(--green-l);border-left:3px solid var(--green-m);margin-bottom:20px">
+      <ul>${recs.map(r=>`<li style="color:var(--green)">${r}</li>`).join('')}</ul>
+    </div>`:''}
+
+    <div class="two-col">
+      <div>
+        <p class="sec-lbl">Drug Interactions (${ixs.length})</p>
+        ${ixHtml}
+      </div>
+      <div>
+        <p class="sec-lbl">Contraindications (${cis.length})</p>
+        ${ciHtml}
+      </div>
+    </div>
+
+    ${alts.length?`<p class="sec-lbl">Suggested Alternatives (${alts.length})</p>
+    <div style="display:grid;grid-template-columns:${alts.length>1?'1fr 1fr':'1fr'};gap:12px;margin-bottom:20px">
+      ${altHtml}
+    </div>`:''}
+
+    ${litHtml}
+
+    <p class="disclaimer">⚕ ${disc}</p>
+  `;
+
+  // ── Inject PANEL ──────────────────────────────────────────────────────────
+  document.getElementById('results-panel').innerHTML = `
+    <div class="panel-card">
+      <p class="panel-heading">Report</p>
+      <p style="font-size:11px;color:var(--ink3);margin-bottom:3px">${repId}</p>
+      <p style="font-size:11px;color:var(--ink3);margin-bottom:14px">${genAt}</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
+        ${sevPill(sev)}${urgBadge(urg)}
+      </div>
+      <div style="line-height:2">${drugs.map(chip).join('')}</div>
+    </div>
+
+    <div class="panel-card">
+      <p class="panel-heading">At a glance</p>
+      <div class="stats-grid">
+        <div class="stat-box">
+          <p class="stat-label">Drugs</p>
+          <p class="stat-num" style="color:var(--ink)">${drugs.length}</p>
+        </div>
+        <div class="stat-box">
+          <p class="stat-label">Interactions</p>
+          <p class="stat-num" style="color:${sevColor}">${ixs.length}</p>
+        </div>
+        <div class="stat-box">
+          <p class="stat-label">Contraind.</p>
+          <p class="stat-num" style="color:${sevColor}">${cis.length}</p>
+        </div>
+        <div class="stat-box">
+          <p class="stat-label">Alternatives</p>
+          <p class="stat-num" style="color:var(--ink)">${alts.length}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-card">
+      <p class="panel-heading">Export</p>
+      <button class="btn-dl" onclick="downloadReport()">↓ Download JSON report</button>
+    </div>
+  `;
+
+  showScreen('screen-results');
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+
+function toggleLit() {
+  const body = document.getElementById('lit-body');
+  const chev = document.getElementById('lit-chevron');
+  body.classList.toggle('open');
+  chev.textContent = body.classList.contains('open') ? '▴' : '▾';
+}
+
+function downloadReport() {
+  if (!reportData) return;
+  const blob = new Blob([JSON.stringify(reportData, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `rxcheck_${reportData.report_id||'report'}.json`;
+  a.click();
+}
+</script>
+</body>
+</html>
