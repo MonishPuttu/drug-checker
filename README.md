@@ -502,6 +502,10 @@ python run.py "Metformin 1000mg BD" --age 72 --conditions "renal impairment" --a
 python run.py --file prescription.pdf --json
 ```
 
+![CLI report for Warfarin 5mg OD, Aspirin 81mg OD](assets/cli-report.png)
+
+<sub>CLI report for the warfarin + aspirin prescription. Captured before the <code>fixed malformed data</code> commit, so the second interaction row is missing its drug name. LLM-written text will differ from run to run.</sub>
+
 **Streamlit UI**
 
 ```bash

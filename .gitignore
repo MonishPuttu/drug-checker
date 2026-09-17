@@ -64,6 +64,8 @@ temp/
 *.jpeg
 *.tiff
 *.bmp
+# README images are the one exception
+!assets/*.png
 reports/
 output/
 outputs/
