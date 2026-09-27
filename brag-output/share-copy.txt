@@ -1,0 +1,1 @@
+Warfarin, aspirin, omeprazole — a routine prescription, and RxCheck flags it HIGH severity. Six LangGraph agents check interactions (RxNorm · OpenFDA), contraindications and alternatives, all running locally on Llama 3.2. Check before it's dispensed: https://github.com/MonishPuttu/drug-checker
