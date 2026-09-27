@@ -26,3 +26,15 @@ The live pipeline could not be run here: it needs a local Ollama model, and this
 | 4 | 11.2–15.8 | **Report** | The results screen: steps, banner, clinical summary, recommendations, interaction cards |
 | 5 | 15.8–18.5 | **Inputs** | "Text, PDF, or a photo of the label." + "100% local — Ollama" |
 | 6 | 18.5–21.0 | **Outro** | RxCheck + GitHub link + "Informational only — not medical advice." |
+
+## Voice-over version (43s)
+The final `brag.mp4` is the extended cut with narration. Voice: Kokoro TTS (`af_heart`), generated locally. Each scene's timeline was stretched to fit its line (entrances and transitions keep their original speed; only the hold in the middle of each scene slows down), the soundtrack was re-timed to match, and the music ducks under the voice. Some spellings below are written for the voice, e.g. "Ani-Talk", "R-x Check".
+
+| # | Time | Narration |
+|---|------|-----------|
+| 1 | 0.0–3.5s | A routine prescription. But is it safe? |
+| 2 | 3.5–9.5s | R-x Check is an AI safety checker that reviews a prescription before it's dispensed. |
+| 3 | 9.5–21.0s | Six specialised agents, orchestrated by Lang Graph, check interactions against R-x Norm and Open F-D-A, flag contraindications, and suggest safer alternatives. |
+| 4 | 21.0–30.4s | The result is a clear clinical report. Here, warfarin with aspirin is flagged high severity for bleeding risk, with recommendations to follow up. |
+| 5 | 30.4–36.8s | Type it, upload a PDF, or snap a photo of the label. It all runs locally, with Ollama. |
+| 6 | 36.8–42.9s | R-x Check. Check before it's dispensed. It's open source on GitHub. |
