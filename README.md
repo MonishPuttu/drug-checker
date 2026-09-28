@@ -1,5 +1,14 @@
 # Drug Interaction Checker
 
+<!-- brag:start -->
+<p align="center">
+  <a href="brag-output/brag.mp4"><img src="brag-output/brag.gif" alt="RxCheck launch video" width="100%"></a>
+  <br>
+  <sub>▶ <a href="brag-output/brag.mp4"><b>Watch the full launch video with voice-over</b></a> (42s, sound on)</sub>
+</p>
+<!-- brag:end -->
+
+
 ### AI-powered multi-agent prescription safety system
 
 **Stack:** LangGraph · LangChain · Ollama (Llama 3.2) · OpenFDA · RxNorm · PubMed · FastAPI · Streamlit
